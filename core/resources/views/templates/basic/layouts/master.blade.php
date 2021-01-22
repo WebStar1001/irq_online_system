@@ -61,7 +61,7 @@
 
                 @if($general->language_status == 1)
                 <select class="custom-select-2 sources" id="langSel" placeholder="En">
-                    <!--<option value="en"><i class="flag-icon flag-icon-es"> </i>@lang('En')</option>-->
+                    <option value="en"><i class="flag-icon flag-icon-es"> </i>@lang('En')</option>
                     @foreach($lan as $item)
                         <option value="{{$item->code}}" @if(session('lang') === $item->code) selected  @endif ><i class="flag-icon flag-icon-es"></i>{{ __($item->code) }}</option>
                     @endforeach

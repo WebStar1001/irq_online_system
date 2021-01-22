@@ -89,6 +89,7 @@
                         <a class="nav-link dropdown-toggle" href="" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">Hi, {{Auth::user()->username}}</a>
                         <ul class="dropdown-menu">
                             <li><a class="dropdown-item" href="{{route('user.edit-profile')}}">@lang('Edit Profile')</a></li>
+                            <li><a class="dropdown-item" href="{{route('user.doc-ver')}}">@lang('Document Verify')</a></li>
                             <li><a class="dropdown-item" href="{{route('user.change-password')}}">@lang('Change Password')</a></li>
                             <li><a class="dropdown-item" href="{{route('user.ticket')}}">@lang('Support')</a></li>
 

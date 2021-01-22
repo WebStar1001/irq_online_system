@@ -28,10 +28,10 @@ class LanguageController extends Controller
             'icon' => ['nullable', 'image', new FileTypeValidate(['png'])]
         ]);
 
-        // if (strtolower($request->code) == 'en') {
-        //     $notify[] = ['error', 'Reserved Language'];
-        //     return back()->with($notify);
-        // }
+//        if (strtolower($request->code) == 'en') {
+//            $notify[] = ['error', 'Reserved Language'];
+//            return back()->with($notify);
+//        }
 
         $data = file_get_contents(resource_path('lang/') . 'default.json');
         $json_file = strtolower($request->code) . '.json';

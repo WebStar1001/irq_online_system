@@ -189,6 +189,8 @@ Route::name('user.')->prefix('user')->group(function () {
             Route::get('edit-profile', 'UserController@editProfile')->name('edit-profile');
             Route::post('edit-profile', 'UserController@submitProfile');
 
+            Route::get('doc-ver', 'UserController@docVerify')->name('doc-ver');
+
 
             Route::get('change-password', 'UserController@changePassword')->name('change-password');
             Route::post('change-password', 'UserController@submitPassword');

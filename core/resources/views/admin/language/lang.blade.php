@@ -40,11 +40,11 @@
                                 <button type="button" class="btn btn-primary editBtn" data-url="{{ route('admin.setting.language-manage-update', $item->id)}}" data-lang="{{ json_encode($item->only('name', 'icon', 'text_align', 'is_default')) }}"><i class="fa fa-fw fa-edit"></i></button>
                                 <button type="button" class="btn btn-danger bold uppercase deleteBtn" data-url="{{ route('admin.setting.language-manage-del', $item->id) }}"> <i class='fa fa-fw fa-trash'></i></button>
                             </td>
-                        </tr>  
+                        </tr>
                     @empty
                     <tr>
                         <td class="text-muted text-center" colspan="100%">{{ $empty_message }}</td>
-                    </tr>                                    
+                    </tr>
                     @endforelse
                     </tbody>
                 </table>
@@ -97,15 +97,15 @@
                         <div class="col-md-6">
                             <label>Text Direction <span class="text-danger">*</span></label>
                             <select name="text_align" class="form-control">
-                                <option value="1">Left to Right</option>
                                 <option value="0">Right to Left</option>
+                                <option value="1">Left to Right</option>
                             </select>
                         </div>
                         <div class="col-md-6">
                             <label for="inputName" class="col-sm-12 ">Default Language <span class="text-danger">*</span></label>
                             <input type="checkbox" data-width="100%" data-height="40px" data-onstyle="success" data-offstyle="danger" data-toggle="toggle" data-on="SET" data-off="UNSET" name="is_default">
                         </div>
-                        
+
                     </div>
 
                 </div>
@@ -157,8 +157,8 @@
                         <label class="col-sm-12">Text Direction <span class="text-danger">*</span></label>
                         <div class="col-sm-12">
                             <select name="text_align" class="form-control" required>
-                                <option value="1">Left to Right</option>
                                 <option value="0">Right to Left</option>
+                                <option value="1">Left to Right</option>
                             </select>
                         </div>
                     </div>
@@ -193,7 +193,7 @@
                 <button type="submit" class="btn btn-danger deleteButton">Delete</button>
                 <button type="button" class="btn btn-dark" data-dismiss="modal">Close</button>
             </div>
-            
+
             </form>
 
         </div>

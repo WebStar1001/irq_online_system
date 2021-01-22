@@ -1564,6 +1564,12 @@ class UserController extends Controller
         return back()->withNotify($notify);
     }
 
+    public function docVerify(){
+        $data['page_title'] = "Document Verify";
+        $data['user'] = User::findOrFail(Auth::user()->id);
+        return view(activeTemplate().'user.doc-ver', $data);
+    }
+
     public function changePassword()
     {
         $data['page_title'] = "Change Password";
