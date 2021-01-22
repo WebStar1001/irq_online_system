@@ -142,7 +142,7 @@ class LanguageController extends Controller
             return back()->withNotify($notify);
         }
 
-        file_put_contents(resource_path('lang/') . $lang->code . '.json', $content);
+        file_put_contents(resource_path('lang/') . strtolower($lang->code) . '.json', $content);
 
         $notify[] = ['success', 'Update Successfully'];
         return back()->withNotify($notify);

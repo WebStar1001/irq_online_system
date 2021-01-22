@@ -14,6 +14,7 @@ core/public/hot
 # Laravel 5 & Lumen specific with changed public path
 core/public_html/storage
 core/public_html/hot
+.idea/
 
 core/storage/*.key
 core/.env
