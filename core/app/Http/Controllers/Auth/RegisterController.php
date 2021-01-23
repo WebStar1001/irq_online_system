@@ -116,6 +116,7 @@ class RegisterController extends Controller
             'status' => 1,
             'ev' =>  $gnl->ev ? 0 : 1,
             'sv' =>  $gnl->sv ? 0 : 1,
+            'docv' =>  0,
             'ts' => 0,
             'tv' => 1,
             'merchant' => $merchant,
