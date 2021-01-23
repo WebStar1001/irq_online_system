@@ -151,7 +151,7 @@ class LanguageController extends Controller
     public function langImport(Request $request)
     {
         $lang = Language::find($request->code);
-        $json = file_get_contents(resource_path('lang/') . $lang->code . '.json');
+        $json = file_get_contents(resource_path('lang/') . strtolower($lang->code) . '.json');
         return $json;
     }
 }
