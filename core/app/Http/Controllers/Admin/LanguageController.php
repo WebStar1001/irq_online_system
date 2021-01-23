@@ -34,7 +34,7 @@ class LanguageController extends Controller
 //        }
 
         $data = file_get_contents(resource_path('lang/') . 'default.json');
-        $json_file = strtolower($request->code) . '.json';
+        $json_file = $request->code . '.json';
         $path = resource_path('lang/') . $json_file;
 
         File::put($path, $data);
@@ -58,7 +58,7 @@ class LanguageController extends Controller
         }
         Language::create([
             'name' => $request->name,
-            'code' => strtolower($request->code),
+            'code' => $request->code,
             'text_align' => $request->text_align,
             'icon' => $filename,
             'is_default' => $request->is_default ? 1 : 0,
@@ -121,7 +121,7 @@ class LanguageController extends Controller
     {
         $la = Language::find($id);
         $page_title = "Update " . $la->name . " Keywords";
-        $json = file_get_contents(resource_path('lang/') . strtolower($la->code) . '.json');
+        $json = file_get_contents(resource_path('lang/') . $la->code . '.json');
         $list_lang = Language::all();
 
         if (empty($json)) {
@@ -142,7 +142,7 @@ class LanguageController extends Controller
             return back()->withNotify($notify);
         }
 
-        file_put_contents(resource_path('lang/') . strtolower($lang->code) . '.json', $content);
+        file_put_contents(resource_path('lang/') . $lang->code . '.json', $content);
 
         $notify[] = ['success', 'Update Successfully'];
         return back()->withNotify($notify);
@@ -151,7 +151,7 @@ class LanguageController extends Controller
     public function langImport(Request $request)
     {
         $lang = Language::find($request->code);
-        $json = file_get_contents(resource_path('lang/') . strtolower($lang->code) . '.json');
+        $json = file_get_contents(resource_path('lang/') . $lang->code . '.json');
         return $json;
     }
 }
