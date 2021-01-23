@@ -14,6 +14,10 @@
                     <span class="float-right font-weight-bold"><a href="{{ route('admin.users.detail', $user->id) }}">{{ $user->username }}</a></span>
                 </p>
                 <p class="clearfix">
+                    <span class="float-left">Account No</span>
+                    <span class="float-right font-weight-bold">{{ $user->account_number }}</span>
+                </p>
+                <p class="clearfix">
                     <span class="float-left">E-mail</span>
                     <span class="float-right text-muted">{{ $user->email }}</span>
                 </p>
@@ -44,16 +48,16 @@
                     </ul>
                 @endforeach
 
-                
-                
+
+
             </div>
 
-           
-           
+
+
         </div>
 
     </div>
-    <div class="col-lg-9">       
+    <div class="col-lg-9">
         <div class="card">
 
             <div class="row p-4">
@@ -176,7 +180,7 @@
 
 
             </div>
-           
+
             <form action="{{ route('admin.users.update', $user->id) }}" method="POST">
                 @csrf
                 <div class="card-body">
@@ -193,7 +197,7 @@
                                 <input class="form-control" type="text" name="lastname" value="{{ $user->lastname }}" required>
                             </div>
                         </div>
-                        
+
                     </div>
                     <div class="form-row">
                         <div class="col-md-6">
@@ -209,7 +213,7 @@
                             </div>
                         </div>
                     </div>
-                    
+
                     <div class="form-group">
 
                         <label>Address</label>
@@ -242,7 +246,7 @@
                             <p class="text-muted">Status</p>
                             <input type="checkbox" data-width="100%" data-onstyle="success" data-offstyle="danger" data-toggle="toggle" data-onstyle="success"    data-offstyle="danger" data-on="Active" data-off="Banned"  data-width="100%" name="status" @if($user->status) checked @endif>
                         </div>
-                        
+
                         <div class="form-group col-lg-4">
                             <p class="text-muted">Email Verification</p>
                             <input type="checkbox" data-width="100%" data-onstyle="success" data-offstyle="danger" data-toggle="toggle" data-on="Verified" data-off="Unverified" name="ev" @if($user->ev) checked @endif>
@@ -252,13 +256,17 @@
                             <p class="text-muted">SMS Verification</p>
                             <input type="checkbox" data-width="100%" data-onstyle="success" data-offstyle="danger" data-toggle="toggle" data-on="Verified" data-off="Unverified" name="sv" @if($user->sv) checked @endif>
                         </div>
+                        <div class="form-group col-lg-4">
+                            <p class="text-muted">Document Verification</p>
+                            <input type="checkbox" data-width="100%" data-onstyle="success" data-offstyle="danger" data-toggle="toggle" data-on="Verified" data-off="Unverified" name="docv" @if($user->docv) checked @endif>
+                        </div>
 
-                        <div class="form-group col-lg-6">
+                        <div class="form-group col-lg-4">
                             <p class="text-muted">2FA Status</p>
                             <input type="checkbox" data-width="100%" data-onstyle="success" data-offstyle="danger" data-toggle="toggle" data-on="On" data-off="Off" name="ts" @if($user->ts) checked @endif>
                         </div>
 
-                        <div class="form-group col-lg-6">
+                        <div class="form-group col-lg-4">
                             <p class="text-muted">2FA Verification</p>
                             <input type="checkbox" data-width="100%" data-onstyle="success" data-offstyle="danger" data-toggle="toggle" data-on="Verified" data-off="Unverified" name="tv" @if($user->tv) checked @endif>
                         </div>

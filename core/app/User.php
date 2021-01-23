@@ -50,22 +50,26 @@ class User extends Authenticatable
         return $this->hasMany('App\Wallet', 'user_id');
     }
 
+    public function docver()
+    {
+        return $this->hasOne('App\Docver', 'id', 'user_id');
+    }
+
     public function transactions()
     {
         return $this->hasMany(Trx::class);
     }
 
 
-
-    public function api_keys(){
-        return $this->hasMany('App\UserApiKey','user_id','id');
+    public function api_keys()
+    {
+        return $this->hasMany('App\UserApiKey', 'user_id', 'id');
     }
-
 
 
     public function moneyTransfers()
     {
-        return $this->hasMany('App\MoneyTransfer', 'user_id')->where('status','!=',0);
+        return $this->hasMany('App\MoneyTransfer', 'user_id')->where('status', '!=', 0);
     }
 
     public function exchangeMoneys()
@@ -82,6 +86,7 @@ class User extends Authenticatable
     {
         return $this->hasMany('App\Invoice', 'user_id');
     }
+
     public function vouchers()
     {
         return $this->hasMany('App\Voucher', 'user_id');

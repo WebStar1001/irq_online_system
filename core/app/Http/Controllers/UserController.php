@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\ContactTopic;
 use App\Currency;
 use App\Deposit;
+use App\Docver;
 use App\ExchangeMoney;
 use App\GeneralSetting;
 use App\Invoice;
@@ -1564,10 +1565,32 @@ class UserController extends Controller
         return back()->withNotify($notify);
     }
 
-    public function docVerify(){
+    public function document(){
         $data['page_title'] = "Document Verify";
         $data['user'] = User::findOrFail(Auth::user()->id);
         return view(activeTemplate().'user.doc-ver', $data);
+    }
+    public function docVerify(Request $request)
+    {
+        $this->validate($request,
+            [
+                'name' => 'required',
+                'photo' => 'required|image|mimes:jpeg,png,jpg,gif,svg|max:8000',
+            ]);
+
+        $docm['user_id'] = Auth::id();
+        $docm['name'] = $request->name;
+        $docm['details'] = $request->details;
+        if($request->hasFile('photo'))
+        {
+            $docm['photo'] = uniqid().'.'.$request->photo->getClientOriginalExtension();
+            $request->photo->move('assets/images/document',$docm['photo']);
+        }
+
+        Docver::create($docm);
+
+        return back()->withSuccess('Verification Request Sent Successfuly!');
+
     }
 
     public function changePassword()

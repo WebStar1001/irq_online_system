@@ -96,7 +96,9 @@ class RegisterController extends Controller
             $company_name =null;
         }
 
+        $account_number = 'IRQ'.rand(pow(10, 10), pow(10, 11)-1);
         $user =  User::create([
+            'account_number' => $account_number,
             'firstname' => $data['firstname'],
             'lastname' => $data['lastname'],
             'company_name' => $company_name,
@@ -130,7 +132,7 @@ class RegisterController extends Controller
         return $user;
     }
 
-    public function registered() 
+    public function registered()
     {
         return redirect()->route('user.home');
     }

@@ -90,6 +90,12 @@
                             @if($sms_unverified_users_count) <span class="badge bg-blue border-radius-10">{{ $sms_unverified_users_count }}</span> @endif
                         </a>
                     </li>
+                    <li class="nav-item {{ sidenav_active('admin.users.documentRequest') }}">
+                        <a class="nav-link" href="{{ route('admin.users.documentRequest') }}">
+                            <span class="mr-2"><i class="fa fa-angle-right"></i></span>
+                            <span class="menu-title">Document Verify</span>
+                        </a>
+                    </li>
                     <li class="nav-item {{ sidenav_active(['admin.users.login.history','admin.users.login.search']) }}">
                         <a class="nav-link" href="{{ route('admin.users.login.history') }}">
                             <span class="mr-2"><i class="fa fa-angle-right"></i></span>
@@ -521,7 +527,7 @@
                             <span class="mr-2"><i class="fa fa-angle-right"></i></span>
                             <span class="menu-title">Global Template</span>
                         </a>
-                    </li>                  
+                    </li>
                     <li class="nav-item {{ sidenav_active(['admin.email-template.index','admin.email-template.edit']) }}">
                         <a class="nav-link" href="{{ route('admin.email-template.index') }}">
                             <span class="mr-2"><i class="fa fa-angle-right"></i></span>

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Currency;
+use App\Docver;
 use App\ExchangeMoney;
 use App\GeneralSetting;
 use App\Http\Controllers\Controller;
@@ -53,7 +54,33 @@ class ManageUsersController extends Controller
         $users = User::smsUnverified()->orderBy('firstname')->orderBy('lastname')->paginate(config('constants.table.default'));
         return view('admin.users.users', compact('page_title', 'empty_message', 'users'));
     }
+    public function documentRequest(){
 
+        $page_title = 'Manage Document Verify';
+        $empty_message = 'No document verify found';
+
+        $docs = Docver::orderBy('id', 'desc')->paginate(10);
+
+        return view('admin.users.document', compact('page_title', 'empty_message', 'docs'));
+    }
+
+    public function documentApprove(Request $request, $id)
+    {
+        $user = User::findOrFail($id);
+
+        $user['docv'] = $request->docv =="1" ?1:0 ;
+
+        $user->save();
+
+        $msg =  'Your Document Verified Successfully';
+        send_email($user->email, $user->username, 'Document Verified', $msg);
+        $sms =  'Your Document Verified Successfully';
+        send_sms($user->mobile, $sms);
+
+
+        return back()->withSuccess('Document Verification Successful');
+
+    }
     public function detail($id)
     {
         $user = User::findOrFail($id);
@@ -133,6 +160,7 @@ class ManageUsersController extends Controller
             'status'    => $request->status ? 1 : 0,
             'ev'        => $request->ev ? 1 : 0,
             'sv'        => $request->sv ? 1 : 0,
+            'docv'        => $request->docv ? 1 : 0,
             'ts'        => $request->ts ? 1 : 0,
             'tv'        => $request->tv ? 1 : 0,
         ]);
