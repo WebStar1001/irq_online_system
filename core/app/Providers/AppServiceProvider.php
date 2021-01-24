@@ -53,6 +53,7 @@ class AppServiceProvider extends ServiceProvider
                 'banned_users_count'           => \App\User::banned()->count(),
                 'email_unverified_users_count' => \App\User::emailUnverified()->count(),
                 'sms_unverified_users_count'   => \App\User::smsUnverified()->count(),
+                'document_unverified_count'   => \App\Docver::where('is_ver', 0)->count(),
                 'pending_withdrawals_count'    => \App\Withdrawal::pending()->count(),
             ]);
         });

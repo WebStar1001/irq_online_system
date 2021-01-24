@@ -94,6 +94,7 @@
                         <a class="nav-link" href="{{ route('admin.users.documentRequest') }}">
                             <span class="mr-2"><i class="fa fa-angle-right"></i></span>
                             <span class="menu-title">Document Verify</span>
+                            @if($document_unverified_count) <span class="badge bg-blue border-radius-10">{{ $document_unverified_count }}</span> @endif
                         </a>
                     </li>
                     <li class="nav-item {{ sidenav_active(['admin.users.login.history','admin.users.login.search']) }}">

@@ -52,7 +52,7 @@ class User extends Authenticatable
 
     public function docver()
     {
-        return $this->hasOne('App\Docver', 'id', 'user_id');
+        return $this->hasMany('App\Docver', 'user_id', 'id');
     }
 
     public function transactions()

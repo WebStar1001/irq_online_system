@@ -13,4 +13,7 @@ class Docver extends Model
     {
         return $this->belongsTo('App\User');
     }
+    public function unverified_count(){
+       return $this->where('is_ver', 0)->count();
+    }
 }

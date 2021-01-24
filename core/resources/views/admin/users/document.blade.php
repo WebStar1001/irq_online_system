@@ -13,6 +13,7 @@
                             <th scope="col">Username</th>
                             <th scope="col">Document Name</th>
                             <th scope="col">Requested Time</th>
+                            <th scope="col">Status</th>
                             <th scope="col">Action</th>
                         </tr>
                         </thead>
@@ -25,6 +26,9 @@
                                 <td>{{$doc->user->username}}</td>
                                 <td>{{$doc->name}}</td>
                                 <td>{{$doc->created_at}}</td>
+                                <td>
+                                    {{($doc->is_ver)? 'Verified' : 'Unverified'}}
+                                </td>
                                 <td>
                                     <a href="" class="btn btn-rounded btn-primary text-white" data-toggle="modal"
                                        data-target="#Modal{{$doc->id}}">

@@ -16,6 +16,7 @@ use App\UserLogin;
 use App\Voucher;
 use App\Wallet;
 use Illuminate\Http\Request;
+use PhpParser\Comment\Doc;
 
 class ManageUsersController extends Controller
 {
@@ -26,6 +27,7 @@ class ManageUsersController extends Controller
         $users = User::orderBy('firstname')->orderBy('lastname')->paginate(config('constants.table.default'));
         return view('admin.users.users', compact('page_title', 'empty_message', 'users'));
     }
+
     public function activeUsers()
     {
         $page_title = 'Manage Active Users';
@@ -33,6 +35,7 @@ class ManageUsersController extends Controller
         $users = User::active()->orderBy('firstname')->orderBy('lastname')->paginate(config('constants.table.default'));
         return view('admin.users.users', compact('page_title', 'empty_message', 'users'));
     }
+
     public function bannedUsers()
     {
         $page_title = 'Manage Banned Users';
@@ -40,6 +43,7 @@ class ManageUsersController extends Controller
         $users = User::banned()->orderBy('firstname')->orderBy('lastname')->paginate(config('constants.table.default'));
         return view('admin.users.users', compact('page_title', 'empty_message', 'users'));
     }
+
     public function emailUnverifiedUsers()
     {
         $page_title = 'Manage Email Unverified Users';
@@ -47,6 +51,7 @@ class ManageUsersController extends Controller
         $users = User::emailUnverified()->orderBy('firstname')->orderBy('lastname')->paginate(config('constants.table.default'));
         return view('admin.users.users', compact('page_title', 'empty_message', 'users'));
     }
+
     public function smsUnverifiedUsers()
     {
         $page_title = 'Manage SMS Unverified Users';
@@ -54,7 +59,9 @@ class ManageUsersController extends Controller
         $users = User::smsUnverified()->orderBy('firstname')->orderBy('lastname')->paginate(config('constants.table.default'));
         return view('admin.users.users', compact('page_title', 'empty_message', 'users'));
     }
-    public function documentRequest(){
+
+    public function documentRequest()
+    {
 
         $page_title = 'Manage Document Verify';
         $empty_message = 'No document verify found';
@@ -68,34 +75,38 @@ class ManageUsersController extends Controller
     {
         $user = User::findOrFail($id);
 
-        $user['docv'] = $request->docv =="1" ?1:0 ;
+        $user['docv'] = $request->docv == "1" ? 1 : 0;
 
         $user->save();
 
-        $msg =  'Your Document Verified Successfully';
+        Docver::where('user_id', $id)->update(array('is_ver' => $request->docv == "1" ? 1 : 0));
+
+        $msg = 'Your Document Verified Successfully';
         send_email($user->email, $user->username, 'Document Verified', $msg);
-        $sms =  'Your Document Verified Successfully';
+        $sms = 'Your Document Verified Successfully';
         send_sms($user->mobile, $sms);
 
 
         return back()->withSuccess('Document Verification Successful');
 
     }
+
     public function detail($id)
     {
         $user = User::findOrFail($id);
-        $userWallet = Wallet::with('currency')->where('user_id',$id)->get();
+        $userWallet = Wallet::with('currency')->where('user_id', $id)->get();
         $withdrawals = $user->withdrawals()->count();
         $deposits = $user->deposits()->count();
         $transactions = $user->transactions()->count();
+        $docs = Docver::orderBy('id', 'desc')->where('user_id', $id)->get();
         $page_title = 'User Detail';
-        return view('admin.users.detail', compact('page_title', 'user', 'withdrawals', 'deposits', 'transactions','userWallet'));
+        return view('admin.users.detail', compact('page_title', 'user', 'withdrawals', 'deposits', 'transactions', 'userWallet', 'docs'));
     }
 
     public function search(Request $request, $scope)
     {
         $search = $request->search;
-        $users =  User::where(function ($user) use ($search) {
+        $users = User::where(function ($user) use ($search) {
             $user->where('username', $search)->orWhere('email', $search);
         });
         $page_title = '';
@@ -145,24 +156,24 @@ class ManageUsersController extends Controller
         }
 
         $user->update([
-            'mobile'    => $request->mobile,
+            'mobile' => $request->mobile,
             'firstname' => $request->firstname,
-            'lastname'  => $request->lastname,
-            'email'     => $request->email,
-            'mobile'    => $request->mobile,
-            'address'   => [
-                'address'   => $request->address,
-                'city'      => $request->city,
-                'state'     => $request->state,
-                'zip'       => $request->zip,
-                'country'   => $request->country,
+            'lastname' => $request->lastname,
+            'email' => $request->email,
+            'mobile' => $request->mobile,
+            'address' => [
+                'address' => $request->address,
+                'city' => $request->city,
+                'state' => $request->state,
+                'zip' => $request->zip,
+                'country' => $request->country,
             ],
-            'status'    => $request->status ? 1 : 0,
-            'ev'        => $request->ev ? 1 : 0,
-            'sv'        => $request->sv ? 1 : 0,
-            'docv'        => $request->docv ? 1 : 0,
-            'ts'        => $request->ts ? 1 : 0,
-            'tv'        => $request->tv ? 1 : 0,
+            'status' => $request->status ? 1 : 0,
+            'ev' => $request->ev ? 1 : 0,
+            'sv' => $request->sv ? 1 : 0,
+            'docv' => $request->docv ? 1 : 0,
+            'ts' => $request->ts ? 1 : 0,
+            'tv' => $request->tv ? 1 : 0,
         ]);
 
         $notify[] = ['success', 'User detail has been updated'];
@@ -203,8 +214,7 @@ class ManageUsersController extends Controller
             'currency' => 'required',
         ]);
 
-        $userWallet = Wallet::with('currency','user')->where('id',$request->currency)->where('user_id',$id)->firstOrFail();
-
+        $userWallet = Wallet::with('currency', 'user')->where('id', $request->currency)->where('user_id', $id)->firstOrFail();
 
 
         $user = User::findOrFail($id);
@@ -224,17 +234,17 @@ class ManageUsersController extends Controller
                 'charge' => 0,
                 'type' => '+',
                 'remark' => 'Added Balance By Admin',
-                'title' => $amount. ' ' . $userWallet->currency->code . ' has been added By Admin ',
+                'title' => $amount . ' ' . $userWallet->currency->code . ' has been added By Admin ',
                 'trx' => $trx
             ]);
 
             notify($user, $type = 'admin-add-balance', [
                 'amount' => $amount,
                 'currency' => $userWallet->currency->code,
-                'remaining_balance' =>  formatter_money($userWallet->amount),
-                'transaction' =>  $trx,
+                'remaining_balance' => formatter_money($userWallet->amount),
+                'transaction' => $trx,
             ]);
-            $notify[] = ['success',  $amount. ' ' . $userWallet->currency->code . ' has been added to ' . $user->username . ' balance'];
+            $notify[] = ['success', $amount . ' ' . $userWallet->currency->code . ' has been added to ' . $user->username . ' balance'];
         } else {
             if ($amount > $userWallet->amount) {
                 $notify[] = ['error', $user->username . ' has insufficient balance.'];
@@ -253,18 +263,18 @@ class ManageUsersController extends Controller
                 'charge' => 0,
                 'type' => '-',
                 'remark' => 'Subtract Balance By Admin',
-                'title' => $amount. ' ' . $userWallet->currency->code . ' has been subtracted By Admin ',
+                'title' => $amount . ' ' . $userWallet->currency->code . ' has been subtracted By Admin ',
                 'trx' => $trx
             ]);
 
             notify($user, $type = 'admin-sub-balance', [
                 'amount' => $amount,
                 'currency' => $userWallet->currency->code,
-                'remaining_balance' =>  formatter_money($userWallet->amount),
-                'transaction' =>  $trx,
+                'remaining_balance' => formatter_money($userWallet->amount),
+                'transaction' => $trx,
             ]);
 
-            $notify[] = ['success', $amount .' '. $userWallet->currency->code. ' has been subtracted from ' . $user->username . ' balance'];
+            $notify[] = ['success', $amount . ' ' . $userWallet->currency->code . ' has been subtracted from ' . $user->username . ' balance'];
         }
 
         return back()->withNotify($notify);
@@ -363,8 +373,6 @@ class ManageUsersController extends Controller
     }
 
 
-
-
     public function moneyTransfer(Request $request, $id)
     {
         $user = User::findOrFail($id);
@@ -378,11 +386,11 @@ class ManageUsersController extends Controller
             $start_date = $request->start_date;
             $end_date = $request->end_date;
             $currency = $request->currency;
-            $page_title = $user->username .' Money Transfer  - ' . $currency . ' : ' . date('d M, Y', strtotime($start_date)) . ' - ' . date('d M, Y', strtotime($end_date));
+            $page_title = $user->username . ' Money Transfer  - ' . $currency . ' : ' . date('d M, Y', strtotime($start_date)) . ' - ' . date('d M, Y', strtotime($end_date));
             $empty_message = 'No Data Found!.';
 
             $query = MoneyTransfer::query();
-            $query->with('sender', 'currency', 'receiver')->where('status', '!=', 0)->where('sender_id',$id)
+            $query->with('sender', 'currency', 'receiver')->where('status', '!=', 0)->where('sender_id', $id)
                 ->when($currency, function ($q, $currency) {
                     $q->whereHas('currency', function ($curr) use ($currency) {
                         $curr->where('code', $currency);
@@ -397,16 +405,15 @@ class ManageUsersController extends Controller
             $transactions = $query->paginate(config('constants.table.default'));
             $currencyList = Currency::where('status', 1)->orderBy('code', 'asc')->get();
 
-            return view('admin.reports.user.money-transfer', compact('page_title', 'transactions', 'empty_message', 'currencyList', 'start_date', 'end_date', 'currency','user'));
+            return view('admin.reports.user.money-transfer', compact('page_title', 'transactions', 'empty_message', 'currencyList', 'start_date', 'end_date', 'currency', 'user'));
         }
 
 
-
-        $page_title = 'Money Transfer : '.$user->username;
-        $transactions = MoneyTransfer::with('sender', 'currency', 'receiver')->where('sender_id',$id)->where('status', '!=', 0)->latest()->paginate(config('constants.table.default'));
+        $page_title = 'Money Transfer : ' . $user->username;
+        $transactions = MoneyTransfer::with('sender', 'currency', 'receiver')->where('sender_id', $id)->where('status', '!=', 0)->latest()->paginate(config('constants.table.default'));
         $empty_message = 'No Data Found.';
         $currencyList = Currency::where('status', 1)->orderBy('code', 'asc')->get();
-        return view('admin.reports.user.money-transfer', compact('page_title', 'transactions', 'empty_message', 'currencyList','user'));
+        return view('admin.reports.user.money-transfer', compact('page_title', 'transactions', 'empty_message', 'currencyList', 'user'));
     }
 
 
@@ -424,11 +431,11 @@ class ManageUsersController extends Controller
             $end_date = $request->end_date;
             $currency = $request->currency;
 
-            $page_title = $user->username .' Money Exchange  - ' . $currency . ' : ' . date('d M, Y', strtotime($start_date)) . ' - ' . date('d M, Y', strtotime($end_date));
+            $page_title = $user->username . ' Money Exchange  - ' . $currency . ' : ' . date('d M, Y', strtotime($start_date)) . ' - ' . date('d M, Y', strtotime($end_date));
             $empty_message = 'No Data Found!.';
 
             $query = ExchangeMoney::query();
-            $query->with('user', 'from_currency', 'to_currency')->where('status', '!=', 0)->where('user_id',$id)
+            $query->with('user', 'from_currency', 'to_currency')->where('status', '!=', 0)->where('user_id', $id)
                 ->when($currency, function ($q, $currency) {
                     $q->whereHas('from_currency', function ($curr) use ($currency) {
                         $curr->where('code', $currency);
@@ -446,16 +453,15 @@ class ManageUsersController extends Controller
             $transactions = $query->paginate(config('constants.table.default'));
             $currencyList = Currency::where('status', 1)->orderBy('code', 'asc')->get();
 
-            return view('admin.reports.user.money-exchange', compact('page_title', 'transactions', 'empty_message', 'currencyList', 'start_date', 'end_date', 'currency','user'));
+            return view('admin.reports.user.money-exchange', compact('page_title', 'transactions', 'empty_message', 'currencyList', 'start_date', 'end_date', 'currency', 'user'));
         }
 
 
-
-        $page_title = 'Money Exchange : '.$user->username;
+        $page_title = 'Money Exchange : ' . $user->username;
         $transactions = ExchangeMoney::with('user', 'from_currency', 'to_currency')->where('user_id', $id)->where('status', '!=', 0)->latest()->paginate(config('constants.table.default'));
         $empty_message = 'No Data Found.';
         $currencyList = Currency::where('status', 1)->orderBy('code', 'asc')->get();
-        return view('admin.reports.user.money-exchange', compact('page_title', 'transactions', 'empty_message', 'currencyList','user'));
+        return view('admin.reports.user.money-exchange', compact('page_title', 'transactions', 'empty_message', 'currencyList', 'user'));
     }
 
 
@@ -474,11 +480,11 @@ class ManageUsersController extends Controller
             $end_date = $request->end_date;
             $currency = $request->currency;
 
-            $page_title = $user->username .' Money Request  - ' . $currency . ' : ' . date('d M, Y', strtotime($start_date)) . ' - ' . date('d M, Y', strtotime($end_date));
+            $page_title = $user->username . ' Money Request  - ' . $currency . ' : ' . date('d M, Y', strtotime($start_date)) . ' - ' . date('d M, Y', strtotime($end_date));
             $empty_message = 'No Data Found!.';
 
             $query = RequestMoney::query();
-            $query->with('user', 'currency', 'receiver')->where('sender_id',$user->id)
+            $query->with('user', 'currency', 'receiver')->where('sender_id', $user->id)
                 ->when($currency, function ($q, $currency) {
                     $q->whereHas('currency', function ($curr) use ($currency) {
                         $curr->where('code', $currency);
@@ -492,18 +498,15 @@ class ManageUsersController extends Controller
                 });
             $transactions = $query->paginate(config('constants.table.default'));
             $currencyList = Currency::where('status', 1)->orderBy('code', 'asc')->get();
-            return view('admin.reports.user.money-request', compact('page_title', 'transactions', 'empty_message', 'currencyList', 'start_date', 'end_date', 'currency','user'));
+            return view('admin.reports.user.money-request', compact('page_title', 'transactions', 'empty_message', 'currencyList', 'start_date', 'end_date', 'currency', 'user'));
         }
 
-        $page_title = 'Money Request : '.$user->username;
+        $page_title = 'Money Request : ' . $user->username;
         $transactions = RequestMoney::with('user', 'currency', 'receiver')->where('sender_id', $user->id)->latest()->paginate(config('constants.table.default'));
         $empty_message = 'No Data Found.';
         $currencyList = Currency::where('status', 1)->orderBy('code', 'asc')->get();
-        return view('admin.reports.user.money-request', compact('page_title', 'transactions', 'empty_message', 'currencyList','user'));
+        return view('admin.reports.user.money-request', compact('page_title', 'transactions', 'empty_message', 'currencyList', 'user'));
     }
-
-
-
 
 
     public function voucherLog(Request $request, $id)
@@ -521,11 +524,11 @@ class ManageUsersController extends Controller
             $end_date = $request->end_date;
             $currency = $request->currency;
 
-            $page_title = $user->username .' Voucher  - ' . $currency . ' : ' . date('d M, Y', strtotime($start_date)) . ' - ' . date('d M, Y', strtotime($end_date));
+            $page_title = $user->username . ' Voucher  - ' . $currency . ' : ' . date('d M, Y', strtotime($start_date)) . ' - ' . date('d M, Y', strtotime($end_date));
             $empty_message = 'No Data Found!.';
 
             $query = Voucher::query();
-            $query->with('user', 'creator', 'currency')->where('user_id',$user->id)
+            $query->with('user', 'creator', 'currency')->where('user_id', $user->id)
                 ->when($currency, function ($q, $currency) {
                     $q->whereHas('currency', function ($curr) use ($currency) {
                         $curr->where('code', $currency);
@@ -540,19 +543,17 @@ class ManageUsersController extends Controller
             $transactions = $query->paginate(config('constants.table.default'));
 
 
-
             $currencyList = Currency::where('status', 1)->orderBy('code', 'asc')->get();
-            return view('admin.reports.user.voucher-gift', compact('page_title', 'transactions', 'empty_message', 'currencyList', 'start_date', 'end_date', 'currency','user'));
+            return view('admin.reports.user.voucher-gift', compact('page_title', 'transactions', 'empty_message', 'currencyList', 'start_date', 'end_date', 'currency', 'user'));
         }
 
-        $page_title = 'Voucher : '.$user->username;
+        $page_title = 'Voucher : ' . $user->username;
         $transactions = Voucher::with('user', 'creator', 'currency')->where('user_id', $user->id)->latest()->paginate(config('constants.table.default'));
 
         $empty_message = 'No Data Found.';
         $currencyList = Currency::where('status', 1)->orderBy('code', 'asc')->get();
-        return view('admin.reports.user.voucher-gift', compact('page_title', 'transactions', 'empty_message', 'currencyList','user'));
+        return view('admin.reports.user.voucher-gift', compact('page_title', 'transactions', 'empty_message', 'currencyList', 'user'));
     }
-
 
 
     public function invoiceLog(Request $request, $id)
@@ -570,7 +571,7 @@ class ManageUsersController extends Controller
             $end_date = $request->end_date;
             $currency = $request->currency;
 
-            $page_title = $user->username .' Invoices  - ' . $currency . ' : ' . date('d M, Y', strtotime($start_date)) . ' - ' . date('d M, Y', strtotime($end_date));
+            $page_title = $user->username . ' Invoices  - ' . $currency . ' : ' . date('d M, Y', strtotime($start_date)) . ' - ' . date('d M, Y', strtotime($end_date));
             $empty_message = 'No Data Found!.';
 
             $query = Invoice::query();
@@ -588,17 +589,15 @@ class ManageUsersController extends Controller
                 });
             $transactions = $query->paginate(config('constants.table.default'));
             $currencyList = Currency::where('status', 1)->orderBy('code', 'asc')->get();
-            return view('admin.reports.user.invoice-log', compact('page_title', 'transactions', 'empty_message', 'currencyList', 'start_date', 'end_date', 'currency','user'));
+            return view('admin.reports.user.invoice-log', compact('page_title', 'transactions', 'empty_message', 'currencyList', 'start_date', 'end_date', 'currency', 'user'));
         }
 
-        $page_title = 'Invoices : '.$user->username;
+        $page_title = 'Invoices : ' . $user->username;
         $transactions = Invoice::with('user', 'currency')->where('user_id', $user->id)->latest()->paginate(config('constants.table.default'));
         $empty_message = 'No Data Found.';
         $currencyList = Currency::where('status', 1)->orderBy('code', 'asc')->get();
-        return view('admin.reports.user.invoice-log', compact('page_title', 'transactions', 'empty_message', 'currencyList','user'));
+        return view('admin.reports.user.invoice-log', compact('page_title', 'transactions', 'empty_message', 'currencyList', 'user'));
     }
-
-
 
 
 }

@@ -48,6 +48,13 @@
                     </ul>
                 @endforeach
 
+                <p class="clearfix mt-3">Verification Document</p>
+
+                @foreach($docs as $doc)
+                    <ul class="list-group">
+                        <li class="list-group-item"><a href="{{ asset('assets/images/document') }}/{{$doc->photo}}" target="_blank">{{$doc->name}} </a></li>
+                    </ul>
+                @endforeach
 
 
             </div>

@@ -22,8 +22,12 @@
 
                                                 <div class="form-group">
                                                     <label>Document Name</label>
-                                                    <input type="text" name="name"
-                                                           class="form-control input-lg input-sz">
+                                                    <select name="name">
+                                                        <option>Passport</option>
+                                                        <option>Front ID Card</option>
+                                                        <option>Back ID Card</option>
+                                                        <option>Other Document</option>
+                                                    </select>
                                                 </div>
                                                 <div class="form-group">
                                                     <label>Document Photo</label>
