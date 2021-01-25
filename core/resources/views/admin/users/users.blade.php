@@ -48,7 +48,7 @@
                     {{ $users->appends($_GET)->links() }}
                 </nav>
             </div>
-            
+
         </div>
     </div>
 </div>
@@ -57,7 +57,7 @@
 @push('breadcrumb-plugins')
     <form action="{{ route('admin.users.search', $scope ?? str_replace('admin.users.', '', request()->route()->getName())) }}" method="GET" class="form-inline">
         <div class="input-group has_append">
-            <input type="text" name="search" class="form-control" placeholder="Username or email" value="{{ $search ?? '' }}">
+            <input type="text" name="search" class="form-control" placeholder="Username or email or account number" value="{{ $search ?? '' }}">
             <div class="input-group-append">
                 <button class="btn btn-success" type="submit"><i class="fa fa-search"></i></button>
             </div>

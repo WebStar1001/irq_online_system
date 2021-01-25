@@ -107,7 +107,7 @@ class ManageUsersController extends Controller
     {
         $search = $request->search;
         $users = User::where(function ($user) use ($search) {
-            $user->where('username', $search)->orWhere('email', $search);
+            $user->where('username', $search)->orWhere('email', $search)->orWhere('account_number', $search);
         });
         $page_title = '';
         switch ($scope) {

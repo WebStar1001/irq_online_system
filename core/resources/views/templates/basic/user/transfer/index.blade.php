@@ -46,7 +46,7 @@
                                                     </div>
                                                     <div class="col-xl-8 col-lg-8 col-md-8 col-sm-6">
                                                         <label>@lang('Receiver Username / E-mail /Phone')</label>
-                                                        <input type="text" class="form-control" placeholder="@lang('Receiver Username / Email /Phone')" id="receiver" value="{{old('receiver')}}"
+                                                        <input type="text" class="form-control" placeholder="@lang('Receiver Username / Email /Phone/Account Number')" id="receiver" value="{{old('receiver')}}"
                                                                name="receiver" v-model="receiver"  v-on:change="getReceiver">
 
                                                         <div v-html="message"></div>

