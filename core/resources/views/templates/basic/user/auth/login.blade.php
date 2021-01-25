@@ -30,8 +30,8 @@
                                                 </div>
                                             </form>
                                             <div class="extra-links">
-                                                <a href="{{ route('user.password.request') }}">@lang('Forget Password')</a>
-                                                <a href="{{ route('user.register') }}">Register now</a>
+                                                <a href="{{ route('user.password.request') }}">@lang('Forgot Password')</a>
+                                                <a href="{{ route('user.register') }}">@lang('Register now')</a>
                                             </div>
                                         </div>
                                     </div>
