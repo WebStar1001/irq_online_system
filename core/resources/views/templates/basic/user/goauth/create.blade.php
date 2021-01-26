@@ -14,7 +14,7 @@
 
 
                             <div class="col-lg-6 col-md-6">
-                                @if(Auth::user()->tauth == '1')
+                                @if(Auth::user()->ts == '1')
                                         <div class="card">
                                                 <h5 class="card-header">@lang('Two Factor Authenticator')</h5>
                                             <div class="card-body">
