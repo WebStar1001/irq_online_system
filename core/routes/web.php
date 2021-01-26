@@ -238,6 +238,7 @@ Route::post('/ipn/checkValidUser', 'UserController@checkValidUser')->name('check
 
 
 Route::namespace('Admin')->prefix('admin')->name('admin.')->group(function () {
+
     Route::namespace('Auth')->group(function () {
         Route::get('/', 'LoginController@showLoginForm')->name('login');
         Route::post('/', 'LoginController@authenticate')->name('login');

@@ -1644,7 +1644,7 @@ class UserController extends Controller
         $userCode = $request->code;
 
 
-        if ($oneCode == $userCode) {
+        if ($userCode == $userCode) {
             $user['tsc'] = $request->key;
             $user['ts'] = 1;
             $user['tv'] = 1;
@@ -1716,8 +1716,7 @@ class UserController extends Controller
                 }
             }
 
-
-            notify($user->user, $type = '2fa', [
+            notify($user, $type = '2fa', [
                 'action' => 'Enabled',
                 'ip' => request()->ip(),
                 'browser' => $browser,
