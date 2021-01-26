@@ -1644,7 +1644,7 @@ class UserController extends Controller
         $userCode = $request->code;
 
 
-        if ($userCode == $userCode) {
+        if ($oneCode == $userCode) {
             $user['tsc'] = $request->key;
             $user['ts'] = 1;
             $user['tv'] = 1;
