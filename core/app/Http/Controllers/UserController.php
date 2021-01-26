@@ -492,7 +492,14 @@ class UserController extends Controller
             $fromCurrencyWallet->save();
 
             $toCurrencyWallet = Wallet::with('currency')->where('user_id', $auth->id)->where('wallet_id', $toCurrencyId)->first();
-
+            if(!$toCurrencyWallet){
+                $toCurrencyWallet = Wallet::create([
+                    'user_id'=>$auth->id,
+                    'wallet_id'=>$toCurrencyId,
+                    'amount'=>0,
+                    'status'=>1
+                ]);
+            }
             $toCurrencyWallet->amount = formatter_money($toCurrencyWallet->amount + $getAmount);
             $toCurrencyWallet->save();
 
