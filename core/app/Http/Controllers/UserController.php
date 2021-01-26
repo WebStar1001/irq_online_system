@@ -1820,7 +1820,7 @@ class UserController extends Controller
             }
 
 
-            notify($user->user, $type = '2fa', [
+            notify($user, $type = '2fa', [
                 'action' => 'Disabled',
                 'ip' => request()->ip(),
                 'browser' => $browser,
