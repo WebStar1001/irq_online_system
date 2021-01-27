@@ -23,11 +23,11 @@ class CheckAdminStatus
             $notify[] = ['error', 'Your Account has been Blocked!'];
             return redirect()->route('admin.login')->withNotify($notify);
         }else{
-            if ($user->tv) {
-                return $next($request);
-            } else {
-                return redirect()->route('admin.authorization');
-            }
+//            if ($user->tv) {
+//                return $next($request);
+//            } else {
+//                return redirect()->route('admin.authorization');
+//            }
         }
 
         return $next($request);
