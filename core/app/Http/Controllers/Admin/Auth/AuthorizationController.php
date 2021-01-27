@@ -44,7 +44,7 @@ class AuthorizationController extends Controller
         $secret = $user->tsc;
         $oneCode = $ga->getCode($secret);
         $userCode = $request->code;
-        if ($oneCode == $oneCode) {
+        if ($userCode == $oneCode) {
             $user->tv = 1;
             $user->save();
             return redirect()->route('admin.dashboard');
