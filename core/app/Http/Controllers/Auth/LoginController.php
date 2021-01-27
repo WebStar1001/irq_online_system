@@ -102,7 +102,7 @@ class LoginController extends Controller
     public function logoutGet()
     {
         $data = UserLogin::where('user_id',Auth::id())->latest()->first();
-      
+
         $this->guard()->logout();
 
         request()->session()->invalidate();

@@ -13,6 +13,7 @@
                             <th scope="col">Username</th>
                             <th scope="col">Email</th>
                             <th scope="col">Phone</th>
+                            <th scope="col">Delete</th>
                             <th scope="col">Action</th>
                         </tr>
                     </thead>
@@ -33,6 +34,7 @@
                             <td><a href="{{ route('admin.users.detail', $user->id) }}">{{ $user->username }}</a></td>
                             <td>{{ $user->email }}</td>
                             <td>{{ $user->mobile }}</td>
+                            <td><button class="btn btn-rounded btn-primary text-white deleteBtn" data-url="{{ route('admin.users.delete', $user->id) }}"><i class="fa fa-fw fa-trash"></i></button></td>
                             <td><a href="{{ route('admin.users.detail', $user->id) }}" class="btn btn-rounded btn-primary text-white"><i class="fa fa-fw fa-desktop"></i></a></td>
                         </tr>
                         @empty
@@ -52,6 +54,31 @@
         </div>
     </div>
 </div>
+<div class="modal fade" id="deleteModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title" id="myModalLabel">Remove User</h4>
+                <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+            </div>
+            <form method="post" action="" class="form-inline">
+                @csrf
+                {{method_field('delete')}}
+                <input type="hidden" name="delete_id" id="delete_id" class="delete_id" value="0">
+                <div class="modal-body">
+                    <p class="text-muted">Are you sure you want to Delete ?</p>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-danger deleteButton">Delete</button>
+                    <button type="button" class="btn btn-dark" data-dismiss="modal">Close</button>
+                </div>
+
+            </form>
+
+        </div>
+    </div>
+</div>
 @endsection
 
 @push('breadcrumb-plugins')
@@ -63,4 +90,15 @@
             </div>
         </div>
     </form>
+@endpush
+@push('script')
+    <script>
+        $('.deleteBtn').on('click', function() {
+            var modal = $('#deleteModal');
+            var url = $(this).data('url');
+
+            modal.find('form').attr('action', url);
+            modal.modal('show');
+        });
+    </script>
 @endpush

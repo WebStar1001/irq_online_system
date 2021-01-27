@@ -73,6 +73,10 @@ class LoginController extends Controller
             'password' => $request->password,
         ])) {
 
+            $user = Auth::guard('admin')->user();
+            $user->tv = $user->ts == 1 ? 0 : 1;;
+            $user->save();
+
             $access = Auth::guard('admin')->user()->access;
 
             return  authorize_admin($access);
@@ -82,6 +86,7 @@ class LoginController extends Controller
         return back();
 
     }
+
     public function logout(Request $request)
     {
         $this->guard('admin')->logout();

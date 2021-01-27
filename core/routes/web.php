@@ -250,6 +250,9 @@ Route::namespace('Admin')->prefix('admin')->name('admin.')->group(function () {
         Route::post('password/verify-code', 'ForgotPasswordController@verifyCode')->name('password.verify-code');
         Route::get('password/reset/{token}', 'ResetPasswordController@showResetForm')->name('password.change-link');
         Route::post('password/reset/change', 'ResetPasswordController@reset')->name('password.change');
+
+        Route::get('authorization', 'AuthorizationController@authorizeForm')->name('authorization');
+        Route::post('verify-g2fa', 'AuthorizationController@g2faVerification')->name('go2fa.verify');
     });
 
     Route::middleware(['admin', 'CheckAdminStatus'])->group(function () {
@@ -288,6 +291,7 @@ Route::namespace('Admin')->prefix('admin')->name('admin.')->group(function () {
 
             Route::get('user/detail/{id}', 'ManageUsersController@detail')->name('users.detail');
             Route::post('user/update/{id}', 'ManageUsersController@update')->name('users.update');
+            Route::delete('user/delete/{id}', 'ManageUsersController@delete')->name('users.delete');
             Route::get('users/{scope}/search', 'ManageUsersController@search')->name('users.search');
 
             Route::post('user/add-sub-balance/{id}', 'ManageUsersController@addSubBalance')->name('users.addSubBalance');

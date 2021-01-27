@@ -179,6 +179,14 @@ class ManageUsersController extends Controller
         $notify[] = ['success', 'User detail has been updated'];
         return redirect()->route('admin.users.detail', $user->id)->withNotify($notify);
     }
+    public function delete(Request $request, $id)
+    {
+
+        $user = User::findOrFail($id);
+        $user->delete();
+        $notify[] = ['success', 'Delete Successfully'];
+        return back()->withNotify($notify);
+    }
 
     public function loginHistory(Request $request)
     {

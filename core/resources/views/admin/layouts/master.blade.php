@@ -7,11 +7,11 @@
   <title>{{ $general->sitename($page_title ?? '') }}</title>
   <link rel="shortcut icon" type="image/png" href="{{ get_image(config('constants.logoIcon.path') .'/favicon.png') }}"/>
   @stack('style-lib')
-  
+
   <link rel="stylesheet" href="{{ asset('assets/admin/css/dashboard.min.css') }}">
   <link rel="stylesheet" href="{{ asset('assets/admin/css/custom.css') }}">
 
- 
+
   @stack('style')
 </head>
 <body>
@@ -34,7 +34,7 @@
         });
     });
   </script>
-  
+
   <script>$('[data-toggle=tooltip]').tooltip();</script>
   @stack('script')
 </body>
