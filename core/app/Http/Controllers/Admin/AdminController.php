@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Deposit;
+use App\GeneralSetting;
+use App\Lib\GoogleAuthenticator;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -87,6 +89,226 @@ class AdminController extends Controller
             'password' => bcrypt($request->password)
         ]);
         return redirect()->route('admin.profile')->withSuccess('Password Changed Successfully');
+
+    }
+    public function twoFactorAuth()
+    {
+        $gnl = GeneralSetting::first();
+        $ga = new GoogleAuthenticator();
+        $page_title = "Google 2Fa Security";
+        $secret = $ga->createSecret();
+        $qrCodeUrl = $ga->getQRCodeGoogleUrl(Auth::guard('admin')->user()->username . '@' . $gnl->sitename, $secret);
+        $prevcode = Auth::user()->tsc;
+        $prevqr = $ga->getQRCodeGoogleUrl(Auth::guard('admin')->user()->username . '@' . $gnl->sitename, $prevcode);
+
+        return view('admin.2fa_security', compact('secret', 'qrCodeUrl', 'prevcode', 'prevqr', 'page_title'));
+    }
+
+    public function create2fa(Request $request)
+    {
+
+
+        $user = Auth::guard('admin')->user();
+        $this->validate($request, [
+            'key' => 'required',
+            'code' => 'required',
+        ]);
+
+        $ga = new GoogleAuthenticator();
+
+        $secret = $request->key;
+        $oneCode = $ga->getCode($secret);
+
+        $userCode = $request->code;
+
+
+        if ($oneCode == $userCode) {
+            $user['tsc'] = $request->key;
+            $user['ts'] = 1;
+            $user['tv'] = 1;
+            $user->save();
+
+            $ip = NULL;
+            $deep_detect = TRUE;
+
+            if (filter_var($ip, FILTER_VALIDATE_IP) === FALSE) {
+                $ip = $_SERVER["REMOTE_ADDR"];
+                if ($deep_detect) {
+                    if (filter_var(@$_SERVER['HTTP_X_FORWARDED_FOR'], FILTER_VALIDATE_IP))
+                        $ip = $_SERVER['HTTP_X_FORWARDED_FOR'];
+                    if (filter_var(@$_SERVER['HTTP_CLIENT_IP'], FILTER_VALIDATE_IP))
+                        $ip = $_SERVER['HTTP_CLIENT_IP'];
+                }
+            }
+            $xml = @simplexml_load_file("http://www.geoplugin.net/xml.gp?ip=" . $ip);
+
+
+            $user_agent = $_SERVER['HTTP_USER_AGENT'];
+            $os_platform = "Unknown OS Platform";
+            $os_array = array(
+                '/windows nt 10/i' => 'Windows 10',
+                '/windows nt 6.3/i' => 'Windows 8.1',
+                '/windows nt 6.2/i' => 'Windows 8',
+                '/windows nt 6.1/i' => 'Windows 7',
+                '/windows nt 6.0/i' => 'Windows Vista',
+                '/windows nt 5.2/i' => 'Windows Server 2003/XP x64',
+                '/windows nt 5.1/i' => 'Windows XP',
+                '/windows xp/i' => 'Windows XP',
+                '/windows nt 5.0/i' => 'Windows 2000',
+                '/windows me/i' => 'Windows ME',
+                '/win98/i' => 'Windows 98',
+                '/win95/i' => 'Windows 95',
+                '/win16/i' => 'Windows 3.11',
+                '/macintosh|mac os x/i' => 'Mac OS X',
+                '/mac_powerpc/i' => 'Mac OS 9',
+                '/linux/i' => 'Linux',
+                '/ubuntu/i' => 'Ubuntu',
+                '/iphone/i' => 'iPhone',
+                '/ipod/i' => 'iPod',
+                '/ipad/i' => 'iPad',
+                '/android/i' => 'Android',
+                '/blackberry/i' => 'BlackBerry',
+                '/webos/i' => 'Mobile'
+            );
+            foreach ($os_array as $regex => $value) {
+                if (preg_match($regex, $user_agent)) {
+                    $os_platform = $value;
+                }
+            }
+            $browser = "Unknown Browser";
+            $browser_array = array(
+                '/msie/i' => 'Internet Explorer',
+                '/firefox/i' => 'Firefox',
+                '/safari/i' => 'Safari',
+                '/chrome/i' => 'Chrome',
+                '/edge/i' => 'Edge',
+                '/opera/i' => 'Opera',
+                '/netscape/i' => 'Netscape',
+                '/maxthon/i' => 'Maxthon',
+                '/konqueror/i' => 'Konqueror',
+                '/mobile/i' => 'Handheld Browser'
+            );
+            foreach ($browser_array as $regex => $value) {
+                if (preg_match($regex, $user_agent)) {
+                    $browser = $value;
+                }
+            }
+
+            notify($user, $type = '2fa', [
+                'action' => 'Enabled',
+                'ip' => request()->ip(),
+                'browser' => $browser,
+                'time' => date('d M, Y h:i:s A'),
+            ]);
+            $notify[] = ['error', 'Google Authenticator Enabled Successfully'];
+            return back()->withNotify($notify);
+        } else {
+            $notify[] = ['error', 'Wrong Verification Code'];
+            return back()->withNotify($notify);
+        }
+
+    }
+
+
+    public function disable2fa(Request $request)
+    {
+        $this->validate($request, [
+            'code' => 'required',
+        ]);
+
+        $user = Auth::guard('admin')->user();
+        $ga = new GoogleAuthenticator();
+
+        $secret = $user->tsc;
+        $oneCode = $ga->getCode($secret);
+        $userCode = $request->code;
+
+        if ($oneCode == $userCode) {
+            $user['ts'] = 0;
+            $user['tv'] = 1;
+            $user['tsc'] = '0';
+            $user->save();
+
+
+            $ip = NULL;
+            $deep_detect = TRUE;
+
+            if (filter_var($ip, FILTER_VALIDATE_IP) === FALSE) {
+                $ip = $_SERVER["REMOTE_ADDR"];
+                if ($deep_detect) {
+                    if (filter_var(@$_SERVER['HTTP_X_FORWARDED_FOR'], FILTER_VALIDATE_IP))
+                        $ip = $_SERVER['HTTP_X_FORWARDED_FOR'];
+                    if (filter_var(@$_SERVER['HTTP_CLIENT_IP'], FILTER_VALIDATE_IP))
+                        $ip = $_SERVER['HTTP_CLIENT_IP'];
+                }
+            }
+            $xml = @simplexml_load_file("http://www.geoplugin.net/xml.gp?ip=" . $ip);
+
+
+            $user_agent = $_SERVER['HTTP_USER_AGENT'];
+            $os_platform = "Unknown OS Platform";
+            $os_array = array(
+                '/windows nt 10/i' => 'Windows 10',
+                '/windows nt 6.3/i' => 'Windows 8.1',
+                '/windows nt 6.2/i' => 'Windows 8',
+                '/windows nt 6.1/i' => 'Windows 7',
+                '/windows nt 6.0/i' => 'Windows Vista',
+                '/windows nt 5.2/i' => 'Windows Server 2003/XP x64',
+                '/windows nt 5.1/i' => 'Windows XP',
+                '/windows xp/i' => 'Windows XP',
+                '/windows nt 5.0/i' => 'Windows 2000',
+                '/windows me/i' => 'Windows ME',
+                '/win98/i' => 'Windows 98',
+                '/win95/i' => 'Windows 95',
+                '/win16/i' => 'Windows 3.11',
+                '/macintosh|mac os x/i' => 'Mac OS X',
+                '/mac_powerpc/i' => 'Mac OS 9',
+                '/linux/i' => 'Linux',
+                '/ubuntu/i' => 'Ubuntu',
+                '/iphone/i' => 'iPhone',
+                '/ipod/i' => 'iPod',
+                '/ipad/i' => 'iPad',
+                '/android/i' => 'Android',
+                '/blackberry/i' => 'BlackBerry',
+                '/webos/i' => 'Mobile'
+            );
+            foreach ($os_array as $regex => $value) {
+                if (preg_match($regex, $user_agent)) {
+                    $os_platform = $value;
+                }
+            }
+            $browser = "Unknown Browser";
+            $browser_array = array(
+                '/msie/i' => 'Internet Explorer',
+                '/firefox/i' => 'Firefox',
+                '/safari/i' => 'Safari',
+                '/chrome/i' => 'Chrome',
+                '/edge/i' => 'Edge',
+                '/opera/i' => 'Opera',
+                '/netscape/i' => 'Netscape',
+                '/maxthon/i' => 'Maxthon',
+                '/konqueror/i' => 'Konqueror',
+                '/mobile/i' => 'Handheld Browser'
+            );
+            foreach ($browser_array as $regex => $value) {
+                if (preg_match($regex, $user_agent)) {
+                    $browser = $value;
+                }
+            }
+
+
+            notify($user, $type = '2fa', [
+                'action' => 'Disabled',
+                'ip' => request()->ip(),
+                'browser' => $browser,
+                'time' => date('d M, Y h:i:s A')
+            ]);
+            $notify[] = ['success', 'Two Factor Authenticator Disable Successfully'];
+            return back()->withNotify($notify);
+        } else {
+            $notify[] = ['error', 'Wrong Verification Code'];
+            return back()->withNotify($notify);
+        }
 
     }
 }

@@ -20,6 +20,8 @@
             <div class="dropdown-menu dropdown-menu-right" aria-labelledby="userProfileDropdown">
                 <a class="dropdown-item" href="{{ route('admin.profile') }}"><i class="fa fa-user"></i> Profile</a>
                 <div class="dropdown-divider"></div>
+                <a class="dropdown-item" href="{{ route('admin.twoFA') }}"><i class="fa fa-user"></i> 2FA Security</a>
+                <div class="dropdown-divider"></div>
                 <a class="dropdown-item" href="{{ route('admin.logout') }}"><i class="fa fa-sign-out"></i>Logout</a>
             </div>
         </li>

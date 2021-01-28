@@ -260,7 +260,9 @@ Route::namespace('Admin')->prefix('admin')->name('admin.')->group(function () {
         Route::get('profile', 'AdminController@profile')->name('profile');
         Route::post('profile', 'AdminController@profileUpdate')->name('profile.update');
         Route::post('password', 'AdminController@passwordUpdate')->name('password.update');
-
+        Route::get('security/two/step', 'AdminController@twoFactorAuth')->name('twoFA');
+        Route::post('g2fa-create', 'AdminController@create2fa')->name('go2fa.create');
+        Route::post('g2fa-disable', 'AdminController@disable2fa')->name('disable.2fa');
         /*
         * Manage Currency
         */
