@@ -98,7 +98,7 @@ class AdminController extends Controller
         $page_title = "Google 2Fa Security";
         $secret = $ga->createSecret();
         $qrCodeUrl = $ga->getQRCodeGoogleUrl(Auth::guard('admin')->user()->username . '@' . $gnl->sitename, $secret);
-        $prevcode = Auth::user()->tsc;
+        $prevcode = Auth::guard('admin')->user()->tsc;
         $prevqr = $ga->getQRCodeGoogleUrl(Auth::guard('admin')->user()->username . '@' . $gnl->sitename, $prevcode);
 
         return view('admin.2fa_security', compact('secret', 'qrCodeUrl', 'prevcode', 'prevqr', 'page_title'));
