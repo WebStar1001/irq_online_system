@@ -123,9 +123,9 @@ class AdminController extends Controller
 
 
         if ($oneCode == $userCode) {
-            $user['tsc'] = $request->key;
-            $user['ts'] = 1;
-            $user['tv'] = 1;
+            $user->tsc = $request->key;
+            $user->ts = 1;
+            $user->tv = 1;
             $user->save();
 
             $ip = NULL;
@@ -224,9 +224,9 @@ class AdminController extends Controller
         $userCode = $request->code;
 
         if ($oneCode == $userCode) {
-            $user['ts'] = 0;
-            $user['tv'] = 1;
-            $user['tsc'] = '0';
+            $user->ts = 0;
+            $user->tv = 1;
+            $user->tsc = '0';
             $user->save();
 
 
